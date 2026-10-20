@@ -1,0 +1,1496 @@
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chloe's Word Adventure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&amp;family=Quicksand:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ----- Chloe's colours: soft yellow & pink theme ----- */
+    --sky:#FFF6C6;
+    --meadow:#FFD1E8;
+    --sun:#FFD84D;
+    --sun-deep:#E8A63A;
+    --coral:#FF9BC8;
+    --berry:#FF5FA2;
+    --ink:#5A3A46;
+    --cream:#FFFDF5;
+    --green-go:#4CAF7D;
+    --shadow: 0 10px 24px rgba(90,58,70,0.16);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Quicksand', ui-rounded, 'Comic Sans MS', sans-serif;
+    color:var(--ink);
+    background: linear-gradient(180deg, var(--sky) 0%, var(--sky) 55%, var(--meadow) 100%);
+    min-height:100vh;
+    overflow-x:hidden;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  h1,h2,.display-font{ font-family:'Baloo 2', ui-rounded, 'Comic Sans MS', sans-serif; }
+
+  /* ---------- App shell ---------- */
+  .app{
+    max-width: 760px;
+    margin: 0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding: 4px 2px 8px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:8px;
+    font-family:'Baloo 2';
+    font-weight:800;
+    font-size: clamp(18px, 4.6vw, 24px);
+    color: var(--ink);
+  }
+  .brand .bear-emoji{ font-size: 1.3em; }
+  .progress-pill{
+    background: var(--cream);
+    border: 3px solid var(--sun);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-weight:700;
+    font-size: clamp(13px, 3.6vw, 16px);
+    box-shadow: var(--shadow);
+    white-space:nowrap;
+  }
+  .gear-btn{
+    width:44px; height:44px; border-radius:50%;
+    border:3px solid var(--sun-deep);
+    background:var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; cursor:pointer;
+    box-shadow: var(--shadow);
+    flex-shrink:0;
+  }
+  .gear-btn:active{ transform: scale(0.92); }
+
+  /* ---------- Mode tabs ---------- */
+  .mode-tabs{
+    display:flex; gap:8px; margin: 2px 0 10px;
+  }
+  .mode-tab{
+    flex:1;
+    border:none;
+    border-radius: 16px;
+    padding: 10px 6px;
+    font-family:'Baloo 2';
+    font-weight:700;
+    font-size: clamp(13px,3.6vw,16px);
+    background: rgba(255,255,255,0.6);
+    color: var(--ink);
+    cursor:pointer;
+    border: 3px solid transparent;
+  }
+  .mode-tab.active{
+    background: var(--cream);
+    border-color: var(--berry);
+    box-shadow: var(--shadow);
+  }
+
+  /* ---------- Stage ---------- */
+  .stage{
+    position:relative;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height: 34vh;
+  }
+  .card{
+    position:relative;
+    width:100%;
+    background: var(--cream);
+    border-radius: 34px;
+    box-shadow: var(--shadow);
+    padding: clamp(24px,7vw,44px) clamp(16px,6vw,32px) clamp(46px,9vw,60px);
+    text-align:center;
+    min-height: 190px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:1;
+  }
+  /* soft yellow/pink glow behind the card — calm, no spinning */
+  .card::before{
+    content:"";
+    position:absolute;
+    inset:-7px;
+    border-radius: 42px;
+    background: linear-gradient(135deg, #FFD84D, #FF9BC8);
+    z-index:-1;
+    opacity:0.85;
+  }
+  .card.sentence-card{ min-height: 150px; }
+  .flash-text{
+    font-family:'Baloo 2';
+    font-weight:800;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+    line-height:1.15;
+    word-break: break-word;
+  }
+  .flash-text.word{ font-size: clamp(40px, 13vw, 92px); text-transform: none; }
+  .flash-text.sentence{ font-size: clamp(24px, 7vw, 44px); }
+  .placeholder-text{
+    font-family:'Baloo 2';
+    font-weight:700;
+    font-size: clamp(20px,5.2vw,28px);
+    color: #C79FB0;
+  }
+  /* bouncy pop whenever a new word/sentence appears */
+  @keyframes popBounceIn{
+    0%{ transform: scale(0.35) rotate(-10deg); opacity:0; }
+    55%{ transform: scale(1.18) rotate(5deg); opacity:1; }
+    75%{ transform: scale(0.94) rotate(-2deg); }
+    100%{ transform: scale(1) rotate(0deg); }
+  }
+  #cardInner.pop-in > *{
+    animation: popBounceIn 0.55s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  .bo-bear{
+    position:absolute;
+    left: 6px;
+    bottom: -18px;
+    font-size: clamp(46px, 12vw, 68px);
+    filter: drop-shadow(0 6px 6px rgba(0,0,0,0.15));
+    animation: bob 2.6s ease-in-out infinite;
+    transform-origin: bottom center;
+  }
+  @keyframes bob{
+    0%,100%{ transform: translateY(0) rotate(-2deg); }
+    50%{ transform: translateY(-8px) rotate(2deg); }
+  }
+  .bo-bear.cheer{ animation: cheer-jump 0.6s ease-in-out infinite; }
+  @keyframes cheer-jump{
+    0%,100%{ transform: translateY(0) rotate(0deg) scale(1); }
+    30%{ transform: translateY(-26px) rotate(-8deg) scale(1.08); }
+    60%{ transform: translateY(0) rotate(8deg) scale(1.05); }
+  }
+  .bear-sparkle{
+    position:absolute;
+    font-size:0.35em;
+    animation: twinkleStar 1.6s ease-in-out infinite;
+  }
+  .bear-sparkle.s1{ top:-4px; right:-2px; animation-delay:0.2s; }
+  .bear-sparkle.s2{ bottom:6px; right:-14px; font-size:0.28em; animation-delay:0.9s; }
+  @keyframes twinkleStar{
+    0%,100%{ opacity:0.3; transform:scale(0.7) rotate(0deg); }
+    50%{ opacity:1; transform:scale(1.3) rotate(15deg); }
+  }
+
+  .speaker-btn{
+    position:absolute;
+    top: 10px;
+    right: 12px;
+    width:40px; height:40px;
+    border-radius:50%;
+    border:3px solid var(--sun);
+    background: var(--cream);
+    font-size:18px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .speaker-btn:active{ transform:scale(0.9); }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .ctrl-btn{
+    border:none;
+    border-radius: 50%;
+    width: clamp(48px, 12vw, 58px);
+    height: clamp(48px, 12vw, 58px);
+    background: var(--cream);
+    box-shadow: var(--shadow);
+    font-size: clamp(20px,5vw,26px);
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    border: 3px solid #FFE3F0;
+  }
+  .ctrl-btn:active{ transform: scale(0.9); }
+  .ctrl-btn.play-pause{
+    background: var(--sun);
+    border-color: var(--sun-deep);
+    width: clamp(58px, 15vw, 68px);
+    height: clamp(58px, 15vw, 68px);
+    font-size: clamp(24px,6vw,30px);
+  }
+
+  .said-it-counter{
+    text-align:center;
+    font-family:'Baloo 2';
+    font-weight:700;
+    font-size: clamp(14px,4vw,17px);
+    color: var(--ink);
+    background: var(--cream);
+    border: 2px solid var(--green-go);
+    border-radius: 999px;
+    padding: 5px 14px;
+    margin: 14px auto 0;
+    width: fit-content;
+    box-shadow: var(--shadow);
+  }
+
+  .said-it-btn{
+    display:block;
+    width:100%;
+    margin-top: 6px;
+    border:none;
+    border-radius: 24px;
+    padding: 16px 10px;
+    background: var(--green-go);
+    color:white;
+    font-family:'Baloo 2';
+    font-weight:800;
+    font-size: clamp(18px, 5vw, 24px);
+    box-shadow: 0 8px 0 #357a55, var(--shadow);
+    cursor:pointer;
+    transform: translateY(0);
+    transition: transform 0.06s;
+  }
+  .said-it-btn:active{
+    transform: translateY(6px);
+    box-shadow: 0 2px 0 #357a55, var(--shadow);
+  }
+  .said-it-btn.shake{ animation: shake 0.45s; }
+  @keyframes shake{
+    10%,90%{ transform: translateX(-3px); }
+    20%,80%{ transform: translateX(6px); }
+    30%,50%,70%{ transform: translateX(-10px); }
+    40%,60%{ transform: translateX(10px); }
+  }
+
+  /* ---------- Settings drawer ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background: rgba(90,58,70,0.38);
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    z-index: 50;
+  }
+  .overlay.open{ display:flex; }
+  .drawer{
+    background: var(--cream);
+    width:100%;
+    max-width: 760px;
+    border-radius: 26px 26px 0 0;
+    padding: 18px 20px calc(20px + env(safe-area-inset-bottom,0px));
+    max-height: 82vh;
+    overflow-y:auto;
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.25);
+  }
+  .drawer h2{ margin: 0 0 12px; font-size:22px; display:flex; justify-content:space-between; align-items:center;}
+  .close-x{
+    border:none; background:#FFE3F0; border-radius:50%;
+    width:34px; height:34px; font-size:16px; cursor:pointer;
+  }
+  .field{ margin-bottom: 16px; }
+  .field label{ display:block; font-weight:700; margin-bottom:6px; font-size:14px; }
+  .field .hint{ font-weight:500; font-size:12px; color:#9C6B85; margin-top:4px; }
+  .field input[type=number], .field select, .field input[type=text]{
+    width:100%;
+    padding: 10px 12px;
+    border-radius:12px;
+    border: 2px solid #FFCFE6;
+    font-family:'Quicksand'; font-weight:600; font-size:15px;
+    background:white;
+  }
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 6px 0;
+  }
+  .switch{
+    position:relative; width:52px; height:30px;
+    background:#FFCFE6; border-radius:999px; cursor:pointer; flex-shrink:0;
+  }
+  .switch.on{ background: var(--green-go); }
+  .switch .knob{
+    position:absolute; top:3px; left:3px;
+    width:24px; height:24px; border-radius:50%;
+    background:white; transition: left 0.15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .switch.on .knob{ left:25px; }
+  .refresh-btn, .view-pool-btn{
+    width:100%;
+    padding: 12px;
+    border-radius:14px;
+    border: 2px solid var(--berry);
+    background:white;
+    color: var(--berry);
+    font-family:'Baloo 2'; font-weight:700; font-size:15px;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .pool-list{
+    display:flex; flex-wrap:wrap; gap:6px;
+    max-height:120px; overflow-y:auto;
+    padding:8px; border-radius:12px; background:#FFF7D6;
+    font-size:12px; margin-top:8px;
+  }
+  .pool-list span{
+    background:white; border-radius:8px; padding:3px 7px;
+    border:1px solid #FFCFE6;
+  }
+
+  /* ---------- Reward popup ---------- */
+  .reward-overlay{
+    position:fixed; inset:0;
+    background: rgba(90,58,70,0.48);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index: 60;
+    padding: 20px;
+  }
+  .reward-overlay.open{ display:flex; }
+  .reward-card{
+    background: var(--cream);
+    border-radius: 30px;
+    padding: 30px 24px 26px;
+    text-align:center;
+    max-width: 420px;
+    width:100%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    position:relative;
+    animation: pop-in 0.35s cubic-bezier(.34,1.56,.64,1);
+    z-index:1;
+  }
+  .reward-card::before{
+    content:"";
+    position:absolute;
+    inset:-8px;
+    border-radius: 38px;
+    background: linear-gradient(135deg, #FF5FA2, #FFD84D);
+    z-index:-1;
+  }
+  @keyframes pop-in{
+    0%{ transform: scale(0.5); opacity:0; }
+    100%{ transform: scale(1); opacity:1; }
+  }
+  .reward-emoji{
+    font-size: 96px;
+    display:inline-block;
+    animation: reward-bounce 0.9s ease-in-out infinite;
+  }
+  @keyframes reward-bounce{
+    0%,100%{ transform: translateY(0) rotate(-6deg) scale(1); }
+    50%{ transform: translateY(-18px) rotate(6deg) scale(1.12); }
+  }
+  .reward-msg{
+    font-family:'Baloo 2'; font-weight:800;
+    font-size: 24px; margin: 12px 0 4px; color: var(--ink);
+  }
+  .reward-sub{
+    font-size:14px; color:#9C6B85; margin-bottom: 18px;
+  }
+  .next-btn{
+    border:none; border-radius:20px;
+    background: var(--sun);
+    padding: 14px 26px;
+    font-family:'Baloo 2'; font-weight:800; font-size:18px;
+    box-shadow: 0 6px 0 var(--sun-deep);
+    cursor:pointer;
+    position: relative;
+    z-index: 5; /* always stays clickable above confetti or any other reward-card overlay */
+  }
+  .next-btn:active{ transform: translateY(4px); box-shadow: 0 2px 0 var(--sun-deep); }
+
+  .reward-card.milestone{
+    border: 4px solid var(--sun-deep);
+    box-shadow: 0 0 0 7px rgba(255,209,102,0.35), 0 20px 50px rgba(0,0,0,0.3);
+  }
+  .reward-card.milestone .reward-emoji{ font-size: 118px; }
+  .reward-card.milestone .reward-msg{ font-size: 27px; color: var(--berry); }
+
+  .confetti{
+    position:absolute; top:-10px; font-size:20px;
+    animation: fall linear forwards;
+    pointer-events: none; /* confetti must never intercept clicks meant for buttons underneath */
+  }
+  @keyframes fall{
+    to{ transform: translateY(340px) rotate(360deg); opacity:0; }
+  }
+
+  .empty-hint{
+    position:fixed; left:50%; bottom: 150px; transform: translateX(-50%);
+    background: var(--ink); color:white; padding:10px 16px; border-radius:14px;
+    font-weight:700; font-size:14px; opacity:0; pointer-events:none;
+    transition: opacity 0.25s;
+    z-index:70;
+    white-space:nowrap;
+  }
+  .empty-hint.show{ opacity:1; }
+
+  select:disabled, input:disabled{ opacity:0.5; }
+
+  /* ---------- Player badge (child name) ---------- */
+  .player-badge{
+    display:flex; align-items:center; gap:8px;
+    background: var(--cream);
+    border: 3px solid var(--berry);
+    border-radius: 999px;
+    padding: 4px 12px 4px 4px;
+    box-shadow: var(--shadow);
+    max-width: 100%;
+  }
+  .avatar-circle{
+    width: 34px; height:34px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:19px; flex-shrink:0;
+    border: 2px solid white;
+  }
+  .avatar-circle.girl{ background: #FFD1E8; }
+  .avatar-circle.boy{ background: #CFEBFF; }
+  .player-name{
+    font-family:'Baloo 2'; font-weight:700; font-size: clamp(14px,3.8vw,18px);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 34vw;
+  }
+
+  /* ---------- Fun extras: floating decorations & liveliness ---------- */
+  .bg-decor{
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+    pointer-events:none;
+    z-index:0;
+  }
+  .bg-decor span{
+    position:absolute;
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    opacity:0.5;
+    animation: bgFloat 6s ease-in-out infinite;
+  }
+  @keyframes bgFloat{
+    0%,100%{ transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(-18px) rotate(10deg); }
+  }
+  .app{ position:relative; z-index:1; }
+
+  /* gentle inviting pulse on the big play button */
+  .ctrl-btn.play-pause{
+    animation: playPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes playPulse{
+    0%,100%{ box-shadow: 0 6px 0 var(--sun-deep), 0 0 0 0 rgba(255,216,77,0.55); }
+    50%{ box-shadow: 0 6px 0 var(--sun-deep), 0 0 0 12px rgba(255,216,77,0); }
+  }
+
+  /* playful wobble for the active mode tab */
+  .mode-tab.active{
+    animation: tabWiggle 2.6s ease-in-out infinite;
+  }
+  @keyframes tabWiggle{
+    0%,100%{ transform: scale(1) rotate(0deg); }
+    50%{ transform: scale(1.04) rotate(-1deg); }
+  }
+
+  /* said-it button gently invites a tap while waiting */
+  .said-it-btn{
+    animation: saidItInvite 2.8s ease-in-out infinite;
+  }
+  @keyframes saidItInvite{
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.02); }
+  }
+  .said-it-btn:active{ animation: none; }
+
+  @media (prefers-reduced-motion: reduce){
+    .bg-decor span, #cardInner.pop-in > *, .bo-bear, .bear-sparkle,
+    .ctrl-btn.play-pause, .mode-tab.active, .said-it-btn, .reward-emoji, .confetti{
+      animation: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-decor" aria-hidden="true">
+  <span style="top:6%; left:4%; animation-delay:0s;">⭐</span>
+  <span style="top:14%; left:88%; animation-delay:1s;">🎈</span>
+  <span style="top:46%; left:2%; animation-delay:2s;">💗</span>
+  <span style="top:72%; left:91%; animation-delay:0.6s;">🌈</span>
+  <span style="top:86%; left:6%; animation-delay:1.6s;">✨</span>
+  <span style="top:30%; left:94%; animation-delay:2.4s;">☁️</span>
+  <span style="top:60%; left:50%; animation-delay:1.2s;">🎀</span>
+</div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="player-badge" id="playerBadge">
+      <div class="avatar-circle girl" id="avatarCircle"><svg viewBox="0 0 40 40" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><path d="M8 15 Q3 5 11 7 Q15 9 14 16 Z" fill="#FFD84D"></path><path d="M32 15 Q37 5 29 7 Q25 9 26 16 Z" fill="#FFD84D"></path><path d="M9.5 14 Q7 8 11 9.5 Q13 11 12.5 15 Z" fill="#FF9BC8"></path><path d="M30.5 14 Q33 8 29 9.5 Q27 11 27.5 15 Z" fill="#FF9BC8"></path><circle cx="20" cy="23" r="13.5" fill="#FFE8CC"></circle><path d="M14.5 11 L20 14 L14.5 17 Z" fill="#FF5FA2"></path><path d="M25.5 11 L20 14 L25.5 17 Z" fill="#FF5FA2"></path><circle cx="20" cy="14" r="1.8" fill="#E8478A"></circle><path d="M13 22 Q15.5 19.5 18 22" stroke="#5A3A46" stroke-width="1.7" fill="none" stroke-linecap="round"></path><path d="M22 22 Q24.5 19.5 27 22" stroke="#5A3A46" stroke-width="1.7" fill="none" stroke-linecap="round"></path><circle cx="20" cy="25.2" r="1" fill="#C79FB0"></circle><path d="M16.5 28 Q20 31.5 23.5 28" stroke="#5A3A46" stroke-width="1.5" fill="none" stroke-linecap="round"></path><circle cx="11" cy="27" r="2.6" fill="#FF9BC8" opacity="0.55"></circle><circle cx="29" cy="27" r="2.6" fill="#FF9BC8" opacity="0.55"></circle></svg></div>
+      <span class="player-name" id="playerNameLabel">Chloe</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div class="progress-pill" id="progressPill">⭐ Word 0 of 10</div>
+      <button class="gear-btn" id="gearBtn" aria-label="Settings">⚙️</button>
+    </div>
+  </div>
+
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tabWords" data-mode="words">🔤 Words</button>
+    <button class="mode-tab" id="tabSentences" data-mode="sentences">📖 Sentences</button>
+  </div>
+
+  <div class="stage">
+    <div class="card" id="card">
+      <button class="speaker-btn" id="speakerBtn" aria-label="Read aloud">🔊</button>
+      <div id="cardInner" class="pop-in"><div class="placeholder-text">Tap ▶ Play to start! 🌟</div></div>
+      <div class="bo-bear" id="boBear">🐻<span class="bear-sparkle s1" aria-hidden="true">✨</span><span class="bear-sparkle s2" aria-hidden="true">⭐</span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn" id="prevBtn" aria-label="Previous">◀</button>
+    <button class="ctrl-btn play-pause" id="playBtn" aria-label="Play or pause">▶</button>
+    <button class="ctrl-btn" id="nextBtn" aria-label="Next">▶▶</button>
+  </div>
+
+  <div class="said-it-counter" id="saidItCounter">😊 0/10</div>
+  <button class="said-it-btn" id="saidItBtn">😊 I Said It Right!</button>
+</div>
+
+<div class="empty-hint" id="emptyHint">Let's see a word first! 😊</div>
+
+<!-- Settings Drawer -->
+<div class="overlay" id="drawerOverlay">
+  <div class="drawer">
+    <h2>Grown-Up Settings <button class="close-x" id="closeDrawer">✕</button></h2>
+
+    <div class="field">
+      <label>🧒 Child's Name</label>
+      <input type="text" id="childNameSettingsInput" maxlength="24" placeholder="Type name here" autocomplete="off">
+      <div class="hint">Shown on screen to make the game feel personal.</div>
+    </div>
+
+    <div class="field">
+      <label id="numItemsLabel">Number of Words (1–200)</label>
+      <input type="number" id="numItemsInput" min="1" max="200" value="10">
+      <div class="hint" id="numItemsHint">The game picks this many unique words for one round.</div>
+    </div>
+
+    <div class="field">
+      <label>Display Speed</label>
+      <select id="speedSelect">
+        <option value="1000">1 second</option>
+        <option value="2000">2 seconds</option>
+        <option value="3000">3 seconds</option>
+        <option value="5000">5 seconds</option>
+        <option value="manual" selected="">Manual (tap Next)</option>
+      </select>
+    </div>
+
+    <div class="toggle-row">
+      <label>🔊 Read Word/Sentence Aloud</label>
+      <div class="switch on" id="readAloudSwitch"><div class="knob"></div></div>
+    </div>
+
+    <div class="toggle-row">
+      <label>🔔 Sound Effects</label>
+      <div class="switch on" id="soundSwitch"><div class="knob"></div></div>
+    </div>
+
+    <button class="refresh-btn" id="refreshPoolBtn">🔄 Refresh 200 Words</button>
+    <button class="view-pool-btn" id="viewPoolBtn">👀 View Current Word Pool</button>
+    <div class="pool-list" id="poolList" style="display:none;"></div>
+
+    <div class="hint" style="margin-top:14px;">Bo picks a fresh, shuffled selection of words each time you refresh the pool.</div>
+  </div>
+</div>
+
+<!-- Reward Popup -->
+<div class="reward-overlay" id="rewardOverlay">
+  <div class="reward-card" id="rewardCard">
+    <div class="reward-emoji" id="rewardEmoji">🥳</div>
+    <div class="reward-msg" id="rewardMsg">Woohoo!</div>
+    <div class="reward-sub" id="rewardSub">You said it right!</div>
+    <button class="next-btn" id="nextRewardBtn">Yay! Next 🎈</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ----------------------------------------------------------------------
+   DATA: word bank, emoji map, sentence bank, rewards
+   ---------------------------------------------------------------------- */
+
+var EMOJI_MAP = {
+  cat:"🐱", dog:"🐶", bird:"🐦", fish:"🐟", duck:"🦆", cow:"🐮", pig:"🐷",
+  horse:"🐴", sheep:"🐑", goat:"🐐", rabbit:"🐰", mouse:"🐭", frog:"🐸",
+  bear:"🐻", lion:"🦁", tiger:"🐯", elephant:"🐘", monkey:"🐵", giraffe:"🦒",
+  zebra:"🦓", snake:"🐍", turtle:"🐢", bee:"🐝", butterfly:"🦋", spider:"🕷️",
+  ant:"🐜", owl:"🦉", fox:"🦊", deer:"🦌", squirrel:"🐿️", chick:"🐥",
+  ball:"⚽", book:"📖", box:"📦", car:"🚗", bike:"🚲", boat:"⛵", train:"🚂",
+  plane:"✈️", chair:"🪑", table:"🍽️", bed:"🛏️", door:"🚪", window:"🪟",
+  cup:"🥤", plate:"🍽️", spoon:"🥄", fork:"🍴", hat:"🎩", shoe:"👟",
+  sock:"🧦", shirt:"👕", bag:"🎒", key:"🔑", phone:"📱", clock:"⏰",
+  lamp:"💡", kite:"🪁", doll:"🪆", toy:"🧸", drum:"🥁",
+  apple:"🍎", banana:"🍌", orange:"🍊", grape:"🍇", milk:"🥛", water:"💧",
+  juice:"🧃", bread:"🍞", cheese:"🧀", egg:"🥚", cake:"🎂", cookie:"🍪",
+  candy:"🍬", pizza:"🍕", rice:"🍚", soup:"🍲", "ice cream":"🍦",
+  sun:"☀️", moon:"🌙", star:"⭐", cloud:"☁️", rain:"🌧️", snow:"❄️",
+  wind:"🌬️", tree:"🌳", flower:"🌸", grass:"🌱", leaf:"🍃", rock:"🪨",
+  sand:"🏖️", sea:"🌊", river:"🏞️", sky:"🌤️", fire:"🔥", ice:"🧊",
+  red:"🔴", blue:"🔵", green:"🟢", yellow:"🟡", purple:"🟣", pink:"🩷",
+  brown:"🟤", black:"⚫", white:"⚪",
+  mom:"👩", dad:"👨", baby:"👶", boy:"👦", girl:"👧", friend:"🧑‍🤝‍🧑",
+  teacher:"🧑‍🏫", sister:"👧", brother:"👦", grandma:"👵", grandpa:"👴",
+  jump:"🤸", run:"🏃", swim:"🏊", clap:"👏", hug:"🤗", sing:"🎵",
+  dance:"💃", laugh:"😄", sleep:"😴", read:"📖", draw:"🎨", kick:"🦵",
+  wave:"👋", smile:"😊", one:"1️⃣", two:"2️⃣", three:"3️⃣"
+};
+
+var SURPRISE_EMOJIS = ["🥳","🦄","🎉","🌈","🐵","🐥","✨","🎈","🍭","🌟","🎊","🐬"];
+
+// Master vocabulary bank (kept larger than 200 so "refresh" can genuinely
+// reshuffle a different 200-word slice with a different order each time).
+var MASTER_WORDS = [
+ "I","you","we","he","she","it","they","me","my","your",
+ "can","go","come","run","jump","walk","hop","sit","stand","eat",
+ "drink","sleep","play","sing","dance","laugh","cry","clap","wave","hug",
+ "help","share","give","take","throw","catch","kick","push","pull","climb",
+ "swim","fly","drive","ride","read","write","draw","paint","build","open",
+ "close","look","see","watch","listen","hear","smell","touch","like","love",
+ "want","need","have","make","find","win","stop","wait","wash","brush",
+ "clean","cook","bake","smile","hop","skip",
+ "cat","dog","bird","fish","duck","cow","pig","horse","sheep","goat",
+ "rabbit","mouse","frog","bear","lion","tiger","elephant","monkey","giraffe","zebra",
+ "snake","turtle","bee","butterfly","spider","ant","owl","fox","deer","squirrel",
+ "chick","puppy","kitten",
+ "mom","dad","baby","boy","girl","friend","teacher","sister","brother","grandma",
+ "grandpa",
+ "ball","book","box","car","bike","boat","train","plane","chair","table",
+ "bed","door","window","cup","plate","spoon","fork","hat","shoe","sock",
+ "shirt","bag","key","phone","clock","lamp","kite","doll","toy","drum",
+ "apple","banana","orange","grape","milk","water","juice","bread","cheese","egg",
+ "cake","cookie","candy","pizza","rice","soup",
+ "sun","moon","star","cloud","rain","snow","wind","tree","flower","grass",
+ "leaf","rock","sand","sea","river","sky","fire","ice",
+ "red","blue","green","yellow","orange","purple","pink","brown","black","white",
+ "one","two","three","four","five","six","seven","eight","nine","ten",
+ "big","small","little","tall","short","fast","slow","hot","cold","happy",
+ "sad","angry","tired","hungry","thirsty","funny","silly","pretty","cute","nice",
+ "kind","good","new","old","clean","dirty","soft","hard","loud","quiet",
+ "wet","dry",
+ "the","a","is","are","and","in","on","at","to","of",
+ "with","this","that","here","there","up","down","out","yes","no",
+ "now","today","please","thank"
+];
+
+// Pre-approved sentences only — never combined at random.
+var SENTENCE_BANK = [
+ {t:"I can kick the ball.", e:"⚽"},
+ {t:"I can see a cat.", e:"🐱"},
+ {t:"The dog can run.", e:"🐶"},
+ {t:"I like the red ball.", e:"⚽"},
+ {t:"We can jump.", e:"🤸"},
+ {t:"The cat is happy.", e:"🐱"},
+ {t:"I see a bird.", e:"🐦"},
+ {t:"The duck can swim.", e:"🦆"},
+ {t:"I have a big dog.", e:"🐶"},
+ {t:"The sun is hot.", e:"☀️"},
+ {t:"I like the blue car.", e:"🚗"},
+ {t:"The fish can swim.", e:"🐟"},
+ {t:"I can clap my hands.", e:"👏"},
+ {t:"The baby can sleep.", e:"👶"},
+ {t:"I like apples.", e:"🍎"},
+ {t:"The bear is big.", e:"🐻"},
+ {t:"We can sing a song.", e:"🎵"},
+ {t:"I can ride my bike.", e:"🚲"},
+ {t:"The frog can jump.", e:"🐸"},
+ {t:"I see the moon.", e:"🌙"},
+ {t:"The rabbit can hop.", e:"🐰"},
+ {t:"I like my mom.", e:"❤️"},
+ {t:"The star is little.", e:"⭐"},
+ {t:"I can read a book.", e:"📖"},
+ {t:"The cow says moo.", e:"🐮"},
+ {t:"I can eat an apple.", e:"🍎"},
+ {t:"The bee is small.", e:"🐝"},
+ {t:"I can throw the ball.", e:"⚽"},
+ {t:"The turtle is slow.", e:"🐢"},
+ {t:"I like ice cream.", e:"🍦"},
+ {t:"The horse can run fast.", e:"🐴"},
+ {t:"I can wash my hands.", e:"🧼"},
+ {t:"The flower is pretty.", e:"🌸"},
+ {t:"I can help my dad.", e:"👨"},
+ {t:"The owl can fly.", e:"🦉"},
+ {t:"I love my friend.", e:"🥰"},
+ {t:"The snow is cold.", e:"❄️"},
+ {t:"I can brush my teeth.", e:"🪥"},
+ {t:"The lion is loud.", e:"🦁"},
+ {t:"I can hug my grandma.", e:"🤗"}
+];
+
+var REWARD_MESSAGES = [
+ "Woohoo! You said it right!", "Amazing!", "Great talking!", "Fantastic!",
+ "Super job!", "Yay! You got it!", "Brilliant!", "Wonderful!", "You did it!"
+];
+
+var MILESTONE_MESSAGES = [
+ "⭐ AMAZING! {n} TIMES! ⭐",
+ "🏆 WOW! {n} right answers! 🏆",
+ "🎉 Superstar! {n} great tries! 🎉",
+ "✨ Incredible! {n} today! ✨",
+ "🥇 You're on fire! {n} done! 🥇",
+ "🎊 Fantastic! {n} and counting! 🎊"
+];
+var MILESTONE_EMOJIS = ["🏆","🥳","🎉","🌈","🦄","🎊","🥇","🐻"];
+
+/* ----------------------------------------------------------------------
+   AUDIO ENGINE (Web Audio API — no external sound files)
+   ---------------------------------------------------------------------- */
+
+var AudioEngine = (function(){
+  var ctx = null;
+  function getCtx(){
+    if(!ctx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) ctx = new AC();
+    }
+    return ctx;
+  }
+  function tone(freq, start, dur, type, peakGain){
+    var c = getCtx(); if(!c) return;
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    osc.type = type || "sine";
+    osc.frequency.setValueAtTime(freq, c.currentTime + start);
+    gain.gain.setValueAtTime(0, c.currentTime + start);
+    gain.gain.linearRampToValueAtTime(peakGain || 0.18, c.currentTime + start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + dur);
+    osc.connect(gain); gain.connect(c.destination);
+    osc.start(c.currentTime + start);
+    osc.stop(c.currentTime + start + dur + 0.02);
+  }
+  function noiseBurst(start, dur, peakGain){
+    var c = getCtx(); if(!c) return;
+    var bufferSize = c.sampleRate * dur;
+    var buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+    var data = buffer.getChannelData(0);
+    for(var i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * (1 - i/bufferSize); }
+    var src = c.createBufferSource();
+    src.buffer = buffer;
+    var gain = c.createGain();
+    gain.gain.setValueAtTime((peakGain||0.15), c.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + dur);
+    src.connect(gain); gain.connect(c.destination);
+    src.start(c.currentTime + start);
+  }
+  function glide(freqFrom, freqTo, start, dur, type, peakGain){
+    var c = getCtx(); if(!c) return;
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    osc.type = type || "sine";
+    osc.frequency.setValueAtTime(freqFrom, c.currentTime + start);
+    osc.frequency.exponentialRampToValueAtTime(freqTo, c.currentTime + start + dur);
+    gain.gain.setValueAtTime(0, c.currentTime + start);
+    gain.gain.linearRampToValueAtTime(peakGain || 0.18, c.currentTime + start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + dur);
+    osc.connect(gain); gain.connect(c.destination);
+    osc.start(c.currentTime + start);
+    osc.stop(c.currentTime + start + dur + 0.02);
+  }
+
+  var effects = {
+    chime: function(){ tone(523,0,0.22,"sine"); tone(659,0.12,0.22,"sine"); tone(784,0.24,0.3,"sine"); },
+    clap: function(){ noiseBurst(0,0.12,0.22); noiseBurst(0.16,0.12,0.2); noiseBurst(0.32,0.14,0.24); },
+    tada: function(){ tone(392,0,0.16,"triangle"); tone(523,0.14,0.35,"triangle",0.22); },
+    bell: function(){ tone(880,0,0.6,"sine",0.16); tone(1318,0.02,0.5,"sine",0.08); },
+    cheer: function(){ noiseBurst(0,0.18,0.18); glide(300,900,0.1,0.35,"sawtooth",0.12); },
+    sparkle: function(){ tone(988,0,0.12,"triangle"); tone(1175,0.08,0.12,"triangle"); tone(1568,0.16,0.18,"triangle"); },
+    melody: function(){ tone(523,0,0.16,"sine"); tone(587,0.14,0.16,"sine"); tone(659,0.28,0.16,"sine"); tone(784,0.42,0.3,"sine"); },
+    boing: function(){ glide(220,660,0,0.18,"sine",0.2); glide(660,220,0.18,0.22,"sine",0.14); },
+    drumroll: function(){
+      for(var i=0;i<8;i++){ noiseBurst(i*0.05, 0.05, 0.08); }
+      tone(784,0.42,0.35,"sine",0.2);
+    },
+    giggle: function(){
+      // playful bouncy "ha-ha-ha" wobble
+      tone(660,0,0.09,"square",0.1);
+      tone(740,0.1,0.09,"square",0.1);
+      tone(830,0.2,0.11,"square",0.11);
+    },
+    twinkle: function(){
+      // gentle random-feeling starry glimmer, four quick high notes
+      var base = [1046,1174,1318,1568];
+      base.forEach(function(f,i){ tone(f + Math.random()*20, i*0.09, 0.14, "triangle", 0.12); });
+    },
+    fanfare: function(){
+      // short triumphant brass-like run for extra-happy moments
+      tone(392,0,0.14,"sawtooth",0.14);
+      tone(523,0.12,0.14,"sawtooth",0.15);
+      tone(659,0.24,0.14,"sawtooth",0.16);
+      tone(784,0.36,0.36,"sawtooth",0.2);
+    }
+  };
+  var names = Object.keys(effects);
+  var lastIndex = -1;
+  function playRandom(){
+    var c = getCtx();
+    if(c && c.state === "suspended"){ c.resume(); }
+    var idx;
+    do { idx = Math.floor(Math.random()*names.length); } while(names.length>1 && idx===lastIndex);
+    lastIndex = idx;
+    effects[names[idx]]();
+  }
+  function shuffleNames(){
+    var a = names.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var tmp=a[i]; a[i]=a[j]; a[j]=tmp;
+    }
+    return a;
+  }
+  var lastMilestoneCombo = "";
+  function playMilestone(){
+    var c = getCtx();
+    if(c && c.state === "suspended"){ c.resume(); }
+    // Build a short 3-sound celebration sequence, randomised from the same
+    // 9 effects, avoiding repeating the exact same combo twice in a row.
+    var combo;
+    do {
+      combo = shuffleNames().slice(0, 3);
+    } while(combo.join(",") === lastMilestoneCombo);
+    lastMilestoneCombo = combo.join(",");
+    combo.forEach(function(name, i){
+      setTimeout(function(){ effects[name](); }, i * 430);
+    });
+  }
+  function unlock(){
+    var c = getCtx();
+    if(c && c.state === "suspended"){ c.resume(); }
+  }
+  return { playRandom: playRandom, playMilestone: playMilestone, unlock: unlock };
+})();
+
+/* Speech synthesis wrapper — always uses a clear, female-sounding voice */
+var Speech = (function(){
+  var supported = "speechSynthesis" in window;
+  var voices = [];
+  var femaleVoice = null;
+
+  // Checked first: voices explicitly labelled as a child/kid voice, where the
+  // browser/OS provides one (some platforms expose "Child", "Kid" voices).
+  var CHILD_NAME_HINTS = ["child","kid","junior"];
+
+  var FEMALE_NAME_HINTS = [
+    "female","woman","girl","samantha","victoria","zira","susan","karen","moira","tessa",
+    "fiona","serena","ava","allison","kate","amy","emma","joanna","salli","kimberly","ivy","kendra","aria",
+    "jenny","natasha","catherine","olivia","lisa","nicole","fiona","sara","zoe","mia","hazel","libby","chloe"
+  ];
+
+  var MALE_NAME_HINTS = [
+    "male","man","boy","daniel","david","james","alex","fred","george","mark","tom","guy","brian","liam","oliver"
+  ];
+
+  var QUALITY_HINTS = ["natural","enhanced","premium","neural","google","wavenet"];
+
+  function isFemaleNamed(v){
+    var n = v.name.toLowerCase();
+    return FEMALE_NAME_HINTS.some(function(hint){ return n.indexOf(hint) !== -1; });
+  }
+  function isMaleNamed(v){
+    var n = v.name.toLowerCase();
+    return MALE_NAME_HINTS.some(function(hint){ return n.indexOf(hint) !== -1; });
+  }
+  function isChildNamed(v){
+    var n = v.name.toLowerCase();
+    return CHILD_NAME_HINTS.some(function(hint){ return n.indexOf(hint) !== -1; });
+  }
+
+  function pickFemaleVoice(){
+    if(!voices.length) return;
+    var candidate = null;
+
+    candidate = voices.find(function(v){ return isFemaleNamed(v) && isChildNamed(v); });
+
+    if(!candidate){
+      candidate = voices.find(function(v){ return isFemaleNamed(v); });
+    }
+
+    if(!candidate){
+      candidate = voices.find(function(v){ return isChildNamed(v) && !isMaleNamed(v); });
+    }
+
+    if(!candidate){
+      candidate = voices.find(function(v){ return /^en/i.test(v.lang) && !isMaleNamed(v); });
+    }
+
+    if(!candidate){
+      candidate = voices.find(function(v){ return /^en/i.test(v.lang); }) || voices[0];
+    }
+
+    femaleVoice = candidate || null;
+  }
+
+  function loadVoices(){
+    if(!supported) return;
+    voices = window.speechSynthesis.getVoices();
+    pickFemaleVoice();
+  }
+
+  if(supported){
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
+
+  function speak(text, rate){
+    if(!supported) return;
+    try{
+      window.speechSynthesis.cancel();
+      setTimeout(function(){
+        try{
+          var u = new SpeechSynthesisUtterance(text);
+          u.rate = rate || 0.85;
+          u.pitch = 1.15;
+          u.volume = 1;
+          if(femaleVoice) u.voice = femaleVoice;
+          window.speechSynthesis.speak(u);
+        }catch(e){ /* ignore */ }
+      }, 40);
+    }catch(e){ /* ignore */ }
+  }
+  function stop(){ if(supported){ try{ window.speechSynthesis.cancel(); }catch(e){} } }
+  return { speak: speak, stop: stop, supported: supported };
+})();
+
+/* ----------------------------------------------------------------------
+   STATE
+   ---------------------------------------------------------------------- */
+
+function shuffle(arr){
+  var a = arr.slice();
+  for(var i=a.length-1;i>0;i--){
+    var j = Math.floor(Math.random()*(i+1));
+    var tmp=a[i]; a[i]=a[j]; a[j]=tmp;
+  }
+  return a;
+}
+
+var state = {
+  childName: "Chloe",
+  mode: "words",              // "words" | "sentences"
+  currentWordPool: [],        // active 200-word (or fewer) working pool
+  numItems: 10,
+  speedMs: "manual",           // number or "manual"
+  readAloud: true,
+  soundOn: true,
+  playing: false,
+  session: null,               // { indices:[], pos:0, shown:Set, n:0 }
+  autoTimer: null,
+  rewardOpen: false,
+  saidItCount: 0,          // cumulative total, never resets — drives milestone wording (10, 20, 30…)
+  saidItSessionCount: 0,   // 0–10 display counter, resets to 0 once it reaches 10
+  lastMessageIdx: -1,
+  lastMilestoneMsgIdx: -1,
+  lastMilestoneEmojiIdx: -1,
+  displayedOnce: false
+};
+
+function refreshWordPool(){
+  var n = Math.min(200, MASTER_WORDS.length);
+  state.currentWordPool = shuffle(MASTER_WORDS).slice(0, n);
+}
+refreshWordPool();
+
+function currentPoolArray(){
+  return state.mode === "words" ? state.currentWordPool : SENTENCE_BANK;
+}
+
+function buildSession(){
+  var pool = currentPoolArray();
+  var n = Math.max(1, Math.min(state.numItems, pool.length));
+  var idxPool = [];
+  for(var i=0;i<pool.length;i++) idxPool.push(i);
+  var chosen = shuffle(idxPool).slice(0, n);
+  state.session = { indices: chosen, pos: 0, shown: new Set(), n: n };
+  state.displayedOnce = false;
+}
+
+function currentItem(){
+  if(!state.session) return null;
+  var pool = currentPoolArray();
+  var idx = state.session.indices[state.session.pos];
+  var raw = pool[idx];
+  if(state.mode === "words"){
+    return { text: raw, emoji: EMOJI_MAP[raw.toLowerCase()] || null };
+  } else {
+    return { text: raw.t, emoji: raw.e };
+  }
+}
+
+function emojiForCurrent(){
+  var item = currentItem();
+  if(!item) return pickSurprise();
+  if(item.emoji) return item.emoji;
+  var words = item.text.toLowerCase().replace(/[.,!?]/g,"").split(/\s+/);
+  for(var i=0;i<words.length;i++){
+    if(EMOJI_MAP[words[i]]) return EMOJI_MAP[words[i]];
+  }
+  return pickSurprise();
+}
+
+var lastSurpriseIdx = -1;
+function pickSurprise(){
+  var idx;
+  do { idx = Math.floor(Math.random()*SURPRISE_EMOJIS.length); } while(SURPRISE_EMOJIS.length>1 && idx===lastSurpriseIdx);
+  lastSurpriseIdx = idx;
+  return SURPRISE_EMOJIS[idx];
+}
+
+function pickMessage(){
+  var idx;
+  do { idx = Math.floor(Math.random()*REWARD_MESSAGES.length); } while(REWARD_MESSAGES.length>1 && idx===state.lastMessageIdx);
+  state.lastMessageIdx = idx;
+  return REWARD_MESSAGES[idx];
+}
+
+function pickMilestoneMessage(){
+  var idx;
+  do { idx = Math.floor(Math.random()*MILESTONE_MESSAGES.length); } while(MILESTONE_MESSAGES.length>1 && idx===state.lastMilestoneMsgIdx);
+  state.lastMilestoneMsgIdx = idx;
+  return MILESTONE_MESSAGES[idx].replace("{n}", state.saidItCount);
+}
+
+function pickMilestoneEmoji(){
+  var idx;
+  do { idx = Math.floor(Math.random()*MILESTONE_EMOJIS.length); } while(MILESTONE_EMOJIS.length>1 && idx===state.lastMilestoneEmojiIdx);
+  state.lastMilestoneEmojiIdx = idx;
+  return MILESTONE_EMOJIS[idx];
+}
+
+/* ----------------------------------------------------------------------
+   DOM refs
+   ---------------------------------------------------------------------- */
+
+var el = {
+  playerBadge: document.getElementById("playerBadge"),
+  avatarCircle: document.getElementById("avatarCircle"),
+  playerNameLabel: document.getElementById("playerNameLabel"),
+  progressPill: document.getElementById("progressPill"),
+  cardInner: document.getElementById("cardInner"),
+  card: document.getElementById("card"),
+  boBear: document.getElementById("boBear"),
+  playBtn: document.getElementById("playBtn"),
+  prevBtn: document.getElementById("prevBtn"),
+  nextBtn: document.getElementById("nextBtn"),
+  saidItBtn: document.getElementById("saidItBtn"),
+  saidItCounter: document.getElementById("saidItCounter"),
+  speakerBtn: document.getElementById("speakerBtn"),
+  emptyHint: document.getElementById("emptyHint"),
+  tabWords: document.getElementById("tabWords"),
+  tabSentences: document.getElementById("tabSentences"),
+  gearBtn: document.getElementById("gearBtn"),
+  drawerOverlay: document.getElementById("drawerOverlay"),
+  closeDrawer: document.getElementById("closeDrawer"),
+  childNameSettingsInput: document.getElementById("childNameSettingsInput"),
+  numItemsInput: document.getElementById("numItemsInput"),
+  numItemsLabel: document.getElementById("numItemsLabel"),
+  numItemsHint: document.getElementById("numItemsHint"),
+  speedSelect: document.getElementById("speedSelect"),
+  readAloudSwitch: document.getElementById("readAloudSwitch"),
+  soundSwitch: document.getElementById("soundSwitch"),
+  refreshPoolBtn: document.getElementById("refreshPoolBtn"),
+  viewPoolBtn: document.getElementById("viewPoolBtn"),
+  poolList: document.getElementById("poolList"),
+  rewardOverlay: document.getElementById("rewardOverlay"),
+  rewardCard: document.getElementById("rewardCard"),
+  rewardEmoji: document.getElementById("rewardEmoji"),
+  rewardMsg: document.getElementById("rewardMsg"),
+  rewardSub: document.getElementById("rewardSub"),
+  nextRewardBtn: document.getElementById("nextRewardBtn")
+};
+
+/* ----------------------------------------------------------------------
+   RENDERING
+   ---------------------------------------------------------------------- */
+
+function updateProgressPill(){
+  var noun = state.mode === "words" ? "Word" : "Sentence";
+  var shown = state.session ? state.session.shown.size : 0;
+  var n = state.session ? state.session.n : state.numItems;
+  el.progressPill.textContent = "⭐ " + noun + " " + shown + " of " + n;
+}
+
+function renderCurrent(){
+  var item = currentItem();
+  if(!item){
+    el.cardInner.innerHTML = '<div class="placeholder-text">Tap ▶ Play to start! 🌟</div>';
+    playPopIn();
+    return;
+  }
+  if(state.mode === "words"){
+    el.card.classList.remove("sentence-card");
+    el.cardInner.innerHTML = '<div class="flash-text word">' + escapeHtml(item.text) + '</div>';
+  } else {
+    el.card.classList.add("sentence-card");
+    el.cardInner.innerHTML = '<div class="flash-text sentence">' + escapeHtml(item.text) + '</div>';
+  }
+  playPopIn();
+}
+
+function playPopIn(){
+  el.cardInner.classList.remove("pop-in");
+  void el.cardInner.offsetWidth;
+  el.cardInner.classList.add("pop-in");
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* ----------------------------------------------------------------------
+   GAME FLOW
+   ---------------------------------------------------------------------- */
+
+function clearAutoTimer(){
+  if(state.autoTimer){ clearTimeout(state.autoTimer); state.autoTimer = null; }
+}
+
+function scheduleAuto(){
+  clearAutoTimer();
+  if(!state.playing || state.rewardOpen) return;
+  if(state.speedMs === "manual") return;
+  state.autoTimer = setTimeout(function(){
+    advance(1);
+  }, state.speedMs);
+}
+
+function showItem(speakIt){
+  if(!state.session) buildSession();
+  state.session.shown.add(state.session.pos);
+  state.displayedOnce = true;
+  renderCurrent();
+  updateProgressPill();
+  if(speakIt && state.readAloud){
+    var item = currentItem();
+    if(item) Speech.speak(item.text);
+  }
+  scheduleAuto();
+}
+
+function advance(dir){
+  if(!state.session) { buildSession(); showItem(true); return; }
+  var n = state.session.n;
+  var newPos = state.session.pos + dir;
+  if(newPos >= n){
+    state.session.indices = shuffle(state.session.indices);
+    newPos = 0;
+  } else if(newPos < 0){
+    newPos = n - 1;
+  }
+  state.session.pos = newPos;
+  showItem(true);
+}
+
+function startPlaying(){
+  AudioEngine.unlock();
+  if(!state.session) buildSession();
+  state.playing = true;
+  el.playBtn.textContent = "⏸";
+  showItem(true);
+}
+
+function pausePlaying(){
+  state.playing = false;
+  el.playBtn.textContent = "▶";
+  clearAutoTimer();
+}
+
+/* ----------------------------------------------------------------------
+   REWARD FLOW
+   ---------------------------------------------------------------------- */
+
+function updateSaidItCounter(){
+  el.saidItCounter.textContent = "😊 " + state.saidItSessionCount + "/10";
+}
+
+function openReward(){
+  clearAutoTimer();
+  state.rewardOpen = true;
+  state.saidItCount++;
+  state.saidItSessionCount++;
+  var isMilestone = (state.saidItSessionCount === 10);
+  updateSaidItCounter();
+  el.rewardCard.classList.toggle("milestone", isMilestone);
+
+  if(isMilestone){
+    el.rewardEmoji.textContent = pickMilestoneEmoji();
+    el.rewardMsg.textContent = pickMilestoneMessage();
+    el.rewardSub.textContent = "You've said it right " + state.saidItCount + " times! Keep going!";
+    spawnConfetti(true);
+    if(state.soundOn) AudioEngine.playMilestone();
+    state.saidItSessionCount = 0;
+    updateSaidItCounter();
+  } else {
+    el.rewardEmoji.textContent = emojiForCurrent();
+    el.rewardMsg.textContent = pickMessage();
+    el.rewardSub.textContent = "You said it right!";
+    spawnConfetti(false);
+    if(state.soundOn) AudioEngine.playRandom();
+  }
+
+  el.boBear.classList.add("cheer");
+  el.rewardOverlay.classList.add("open");
+}
+
+function closeRewardAndAdvance(){
+  el.rewardOverlay.classList.remove("open");
+  state.rewardOpen = false;
+  el.boBear.classList.remove("cheer");
+  Speech.stop();
+  advance(1);
+}
+
+function spawnConfetti(big){
+  var bits = big ? ["🎉","🎊","⭐","🏆","✨","💛","🌟","🎈"] : ["✨","🎉","⭐","💫","🎊"];
+  var count = big ? 26 : 10;
+  var frag = document.createDocumentFragment();
+  for(var i=0;i<count;i++){
+    var span = document.createElement("span");
+    span.className = "confetti";
+    span.textContent = bits[Math.floor(Math.random()*bits.length)];
+    span.style.left = (5 + Math.random()*90) + "%";
+    span.style.fontSize = big ? (18 + Math.random()*14) + "px" : "20px";
+    span.style.animationDuration = (0.9 + Math.random()*0.9) + "s";
+    span.style.animationDelay = (Math.random()*(big ? 0.5 : 0.3)) + "s";
+    frag.appendChild(span);
+  }
+  var old = el.rewardCard.querySelectorAll(".confetti");
+  old.forEach(function(n){ n.remove(); });
+  el.rewardCard.appendChild(frag);
+}
+
+function showEmptyHint(){
+  el.saidItBtn.classList.add("shake");
+  el.emptyHint.classList.add("show");
+  setTimeout(function(){ el.saidItBtn.classList.remove("shake"); }, 460);
+  setTimeout(function(){ el.emptyHint.classList.remove("show"); }, 1400);
+}
+
+/* ----------------------------------------------------------------------
+   PLAYER NAME / AVATAR
+   ---------------------------------------------------------------------- */
+
+var CHILD_AVATAR_SVG =
+  '<svg viewBox="0 0 40 40" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M8 15 Q3 5 11 7 Q15 9 14 16 Z" fill="#FFD84D"/>' +
+    '<path d="M32 15 Q37 5 29 7 Q25 9 26 16 Z" fill="#FFD84D"/>' +
+    '<path d="M9.5 14 Q7 8 11 9.5 Q13 11 12.5 15 Z" fill="#FF9BC8"/>' +
+    '<path d="M30.5 14 Q33 8 29 9.5 Q27 11 27.5 15 Z" fill="#FF9BC8"/>' +
+    '<circle cx="20" cy="23" r="13.5" fill="#FFE8CC"/>' +
+    '<path d="M14.5 11 L20 14 L14.5 17 Z" fill="#FF5FA2"/>' +
+    '<path d="M25.5 11 L20 14 L25.5 17 Z" fill="#FF5FA2"/>' +
+    '<circle cx="20" cy="14" r="1.8" fill="#E8478A"/>' +
+    '<path d="M13 22 Q15.5 19.5 18 22" stroke="#5A3A46" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
+    '<path d="M22 22 Q24.5 19.5 27 22" stroke="#5A3A46" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="20" cy="25.2" r="1" fill="#C79FB0"/>' +
+    '<path d="M16.5 28 Q20 31.5 23.5 28" stroke="#5A3A46" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="11" cy="27" r="2.6" fill="#FF9BC8" opacity="0.55"/>' +
+    '<circle cx="29" cy="27" r="2.6" fill="#FF9BC8" opacity="0.55"/>' +
+  '</svg>';
+
+function updatePlayerBadge(){
+  el.avatarCircle.innerHTML = CHILD_AVATAR_SVG;
+  el.playerNameLabel.textContent = state.childName && state.childName.trim() ? state.childName.trim() : "Chloe";
+  document.title = el.playerNameLabel.textContent + "'s Word Adventure";
+}
+
+/* ----------------------------------------------------------------------
+   EVENTS
+   ---------------------------------------------------------------------- */
+
+el.playBtn.addEventListener("click", function(){
+  AudioEngine.unlock();
+  if(state.playing){ pausePlaying(); } else { startPlaying(); }
+});
+
+el.nextBtn.addEventListener("click", function(){
+  AudioEngine.unlock();
+  if(state.rewardOpen) return;
+  if(!state.session) buildSession();
+  advance(1);
+});
+
+el.prevBtn.addEventListener("click", function(){
+  AudioEngine.unlock();
+  if(state.rewardOpen) return;
+  if(!state.session) buildSession();
+  advance(-1);
+});
+
+el.saidItBtn.addEventListener("click", function(){
+  AudioEngine.unlock();
+  if(state.rewardOpen) return;
+  if(!state.displayedOnce || !state.session){
+    showEmptyHint();
+    return;
+  }
+  openReward();
+});
+
+el.nextRewardBtn.addEventListener("click", function(){
+  if(!state.rewardOpen) return;
+  closeRewardAndAdvance();
+});
+
+el.speakerBtn.addEventListener("click", function(){
+  var item = currentItem();
+  if(item) Speech.speak(item.text);
+});
+
+el.tabWords.addEventListener("click", function(){ switchMode("words"); });
+el.tabSentences.addEventListener("click", function(){ switchMode("sentences"); });
+
+function switchMode(mode){
+  if(state.mode === mode) return;
+  state.mode = mode;
+  el.tabWords.classList.toggle("active", mode === "words");
+  el.tabSentences.classList.toggle("active", mode === "sentences");
+  el.numItemsLabel.textContent = mode === "words" ? "Number of Words (1–200)" : "Number of Sentences (1–" + SENTENCE_BANK.length + ")";
+  el.numItemsInput.max = mode === "words" ? 200 : SENTENCE_BANK.length;
+  if(Number(el.numItemsInput.value) > Number(el.numItemsInput.max)){
+    el.numItemsInput.value = el.numItemsInput.max;
+    state.numItems = Number(el.numItemsInput.max);
+  }
+  pausePlaying();
+  state.session = null;
+  renderCurrent();
+  updateProgressPill();
+}
+
+/* Settings drawer */
+el.gearBtn.addEventListener("click", function(){
+  el.childNameSettingsInput.value = state.childName;
+  el.drawerOverlay.classList.add("open");
+});
+el.closeDrawer.addEventListener("click", function(){ el.drawerOverlay.classList.remove("open"); });
+el.drawerOverlay.addEventListener("click", function(e){
+  if(e.target === el.drawerOverlay) el.drawerOverlay.classList.remove("open");
+});
+
+el.childNameSettingsInput.addEventListener("input", function(){
+  state.childName = el.childNameSettingsInput.value;
+  updatePlayerBadge();
+});
+el.childNameSettingsInput.addEventListener("blur", function(){
+  state.childName = (el.childNameSettingsInput.value || "").trim() || "Chloe";
+  el.childNameSettingsInput.value = state.childName;
+  updatePlayerBadge();
+});
+
+el.numItemsInput.addEventListener("change", function(){
+  var v = parseInt(el.numItemsInput.value, 10);
+  var max = Number(el.numItemsInput.max);
+  if(isNaN(v) || v < 1) v = 1;
+  if(v > max) v = max;
+  el.numItemsInput.value = v;
+  state.numItems = v;
+  pausePlaying();
+  state.session = null;
+  renderCurrent();
+  updateProgressPill();
+});
+
+el.speedSelect.addEventListener("change", function(){
+  var v = el.speedSelect.value;
+  state.speedMs = (v === "manual") ? "manual" : parseInt(v, 10);
+  scheduleAuto();
+});
+
+el.readAloudSwitch.addEventListener("click", function(){
+  state.readAloud = !state.readAloud;
+  el.readAloudSwitch.classList.toggle("on", state.readAloud);
+});
+
+el.soundSwitch.addEventListener("click", function(){
+  state.soundOn = !state.soundOn;
+  el.soundSwitch.classList.toggle("on", state.soundOn);
+});
+
+el.refreshPoolBtn.addEventListener("click", function(){
+  refreshWordPool();
+  if(state.mode === "words"){
+    pausePlaying();
+    state.session = null;
+    renderCurrent();
+    updateProgressPill();
+  }
+  renderPoolList();
+});
+
+el.viewPoolBtn.addEventListener("click", function(){
+  var visible = el.poolList.style.display !== "none";
+  el.poolList.style.display = visible ? "none" : "flex";
+  if(!visible) renderPoolList();
+});
+
+function renderPoolList(){
+  var html = state.currentWordPool.map(function(w){ return "<span>" + escapeHtml(w) + "</span>"; }).join("");
+  el.poolList.innerHTML = html;
+}
+
+/* ----------------------------------------------------------------------
+   INIT
+   ---------------------------------------------------------------------- */
+
+el.numItemsInput.value = state.numItems;
+el.childNameSettingsInput.value = state.childName;
+renderCurrent();
+updateProgressPill();
+updatePlayerBadge();
+updateSaidItCounter();
+// Chloe is the default player — no mandatory setup before play.
+// Grown-ups can tap the gear icon (top-right) to rename at any time.
+
+})();
+</script>
+<script>(function(){
+if(window.top===window.self)return;
+var WRAPPER_ORIGIN="https://sharable.link";
+function retarget(raw,isDownload){
+var here,url;
+try{here=new URL(location.href);url=new URL(raw,location.href)}catch(e){return null}
+if(url.protocol!=="http:"&&url.protocol!=="https:")return null;
+if(url.origin!==here.origin)return url.href;
+if(isDownload||url.pathname===here.pathname)return null;
+return WRAPPER_ORIGIN+url.pathname+url.search+url.hash}
+document.addEventListener("click",function(e){
+if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+if(document.querySelector("base[target]"))return;
+var a=e.target&&e.target.closest?e.target.closest("a[href]"):null;
+if(!a||(a.target&&a.target!=="_self"))return;
+var href=retarget(a.getAttribute("href"),a.hasAttribute("download"));
+if(!href)return;
+a.href=href;a.target="_top"});
+document.addEventListener("submit",function(e){
+var form=e.target;
+if(e.defaultPrevented||!form||form.target)return;
+var href=retarget(form.getAttribute("action"),false);
+if(!href)return;
+form.action=href;form.target="_top"})})();</script></body></html>

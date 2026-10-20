@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Frost Tower</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  @property --sky-top{ syntax:'<color>'; inherits:true; initial-value:#2B3A67; }
+  @property --sky-bottom{ syntax:'<color>'; inherits:true; initial-value:#6B7FB0; }
+
+  :root{
+    --ink:#22304A;
+    --coral:#FF6B6B; --marigold:#FFB84C; --grass:#4FBF9F;
+    --skyberry:#5AA9E6; --grape:#B983FF; --bubblegum:#F5B8D0;
+    --sunshine:#8ECFEB; --cloud:rgba(255,255,255,0.85);
+    --sky-top:#2B3A67; --sky-bottom:#6B7FB0;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; font-family:'Nunito',sans-serif; color:var(--ink); }
+  body{
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+    transition: --sky-top 2.5s ease, --sky-bottom 2.5s ease, color 2.5s ease;
+    display:flex; flex-direction:column; height:100vh; height:100dvh;
+    position:relative; user-select:none;
+  }
+  body.night-text{ color:#F2F6FF; }
+
+  /* ---------- scene layers ---------- */
+  .scene{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:1; }
+  .stars{ position:absolute; inset:0; opacity:0; transition:opacity 2.5s ease; }
+  .star{ position:absolute; width:3px; height:3px; background:#fff; border-radius:50%; animation:twinkle 2.4s ease-in-out infinite; }
+  @keyframes twinkle{ 0%,100%{opacity:.2;} 50%{opacity:1;} }
+
+  .snow{ position:absolute; inset:0; }
+  .flake{ position:absolute; top:-10px; background:#fff; border-radius:50%; opacity:.85; animation:snowfall linear infinite; }
+  @keyframes snowfall{
+    0%{ transform:translate(0,-10px) rotate(0deg); }
+    100%{ transform:translate(12px,116vh) rotate(200deg); }
+  }
+
+  .cloud{ position:absolute; background:var(--cloud); border-radius:50px; opacity:.9; transition:opacity 2.5s ease; }
+
+  .sunmoon{ position:absolute; width:46px; height:46px; filter:drop-shadow(0 0 10px rgba(255,255,255,.6));
+    transition: left 3s ease, top 3s ease, opacity 2s ease, width 2s ease, height 2s ease; opacity:0; }
+  .celestial-svg{ position:absolute; inset:0; width:100%; height:100%; transition:opacity 2s ease; }
+  .sun-rays{ transform-origin:32px 32px; animation: spin 46s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .bird{ position:absolute; opacity:0; }
+  .bird svg{ display:block; }
+  .bird .wing{ transform-origin:16px 6px; animation:flap .5s ease-in-out infinite alternate; }
+  .owl{ position:absolute; width:44px; height:40px; opacity:0; transition:opacity 2s ease; }
+  .owl-eyes{ transform-origin:24px 22px; animation: blink 4.2s ease-in-out infinite; }
+  @keyframes blink{ 0%,92%,100%{ transform:scaleY(1); } 96%{ transform:scaleY(0.12); } }
+
+  .shootingstar{ position:absolute; width:2px; height:2px; opacity:0; }
+  .shootingstar.active{ animation: shoot 1.4s ease-in forwards; }
+  .streak-mark{ position:absolute; inset:0; transform:rotate(-33deg); transform-origin:100% 0%; }
+  .streak-mark::before{ content:''; position:absolute; width:84px; height:2px; right:0; top:0;
+    background:linear-gradient(90deg, transparent, #fff); transform:translateX(2px); }
+  .streak-mark::after{ content:''; position:absolute; width:5px; height:5px; border-radius:50%; background:#fff;
+    box-shadow:0 0 12px 4px rgba(255,255,255,.95); right:-2.5px; top:-1.5px; }
+  @keyframes shoot{
+    0%{ opacity:0; transform:translate(0,0); }
+    8%{ opacity:1; }
+    85%{ opacity:1; }
+    100%{ opacity:0; transform:translate(-150px,97px); }
+  }
+
+  @keyframes flyacross{ from{ transform:translateX(-40px); } to{ transform:translateX(calc(100vw + 40px)); } }
+  @keyframes bob{ from{ margin-top:-6px; } to{ margin-top:6px; } }
+  @keyframes flap{ from{ transform:scaleY(1) rotate(0deg); } to{ transform:scaleY(0.45) rotate(-8deg); } }
+
+  /* ---------- header ---------- */
+  header{ flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    padding:max(10px, env(safe-area-inset-top)) 14px 6px; position:relative; z-index:5; gap:4px; row-gap:4px; }
+  .title{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(15px,4.2vw,21px); display:flex; align-items:center; gap:6px; }
+  .stats-row{ display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
+  .stat{ background:var(--cloud); border-radius:14px; padding:5px 9px; font-family:'Baloo 2',sans-serif; font-weight:700;
+    font-size:clamp(10px,2.6vw,13px); display:flex; align-items:center; gap:4px; box-shadow:0 2px 0 rgba(0,0,0,.08); color:var(--ink); }
+  .icon-btn{ width:32px; height:32px; border-radius:50%; border:none; background:var(--cloud); font-size:15px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,.08); }
+  .icon-btn:active{ transform:translateY(1px); }
+
+  /* ---------- tower ---------- */
+  .tower-wrap{ flex:1 1 auto; position:relative; z-index:2; display:flex; flex-direction:column; align-items:center;
+    justify-content:flex-end; overflow:hidden; min-height:0; }
+  .tower-viewport{ flex:1 1 auto; width:100%; position:relative; display:flex; align-items:flex-end; justify-content:center; min-height:0; overflow:hidden; }
+  .tower-stage{ position:relative; transform-origin:bottom center; will-change:transform; }
+  .tower-piece{ position:absolute; }
+  .cell{ position:absolute; border-radius:5px; box-shadow: inset 0 -4px 0 rgba(0,0,0,.16), inset 0 3px 0 rgba(255,255,255,.4); }
+  .piece-label{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center;
+    font-family:'Baloo 2',sans-serif; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.45); pointer-events:none; line-height:1.05; padding:2px; }
+
+  .base{ flex:0 0 auto; width:92%; max-width:340px; height:16px; border-radius:50%; background:var(--cloud);
+    box-shadow:0 4px 8px rgba(0,0,0,.12); margin-bottom:2px; }
+
+  /* ---------- picker ---------- */
+  .picker{ flex:0 0 auto; position:relative; z-index:5; padding:4px 12px max(10px, env(safe-area-inset-bottom)); }
+  .blocks-row{ display:flex; gap:8px; justify-content:center; margin-bottom:8px; }
+  .word-btn{ position:relative; width:clamp(80px,24vw,110px); min-height:clamp(98px,27vw,130px); border:none; border-radius:16px; cursor:pointer;
+    background:rgba(255,255,255,.35); padding:6px 4px 8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+  .word-btn:active .piece-shape{ transform:translateY(2px) scale(.96); }
+  .piece-shape{ position:relative; transition:transform .08s ease; flex-shrink:0; margin:0 auto; }
+  .word-label{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(13px,3.6vw,17px); color:#22304A; line-height:1.05; }
+
+  .controls-row{ display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; min-height:20px; }
+  .timer-pill{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(11px,3vw,14px); background:var(--cloud);
+    border-radius:18px; padding:7px 14px; display:flex; align-items:center; gap:6px; color:var(--ink); box-shadow:0 3px 0 rgba(0,0,0,.08); }
+  .pill-btn{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(11px,3vw,14px); background:var(--cloud);
+    border:none; border-radius:18px; padding:9px 14px; display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--ink);
+    box-shadow:0 3px 0 rgba(0,0,0,.08); }
+  .pill-btn:active{ transform:translateY(2px); box-shadow:none; }
+  .secondary-btn{ background:var(--skyberry); }
+
+  /* ---------- overlays ---------- */
+  .overlay{ position:absolute; inset:0; z-index:30; background:rgba(15,20,50,.62); display:flex; align-items:center; justify-content:center; padding:18px; }
+  .card{ background:#fff; border-radius:24px; padding:22px 22px; max-width:360px; width:100%; max-height:92%; overflow:auto;
+    text-align:center; box-shadow:0 12px 30px rgba(0,0,0,.28); color:var(--ink); }
+  .close-x{ position:absolute; top:10px; right:10px; width:30px; height:30px; border-radius:50%; border:none;
+    background:#f1f3f9; color:var(--ink); font-size:20px; line-height:1; cursor:pointer; z-index:2;
+    display:flex; align-items:center; justify-content:center; }
+  .close-x:active{ transform:translateY(1px); }
+  .card h1{ font-family:'Baloo 2',sans-serif; font-size:clamp(19px,5vw,25px); margin:0 0 6px; }
+  .card p{ margin:0 0 14px; font-size:14px; line-height:1.4; color:#5c6584; }
+  .card input, .card textarea{ width:100%; padding:11px 13px; border-radius:12px; border:2px solid #eef1f8;
+    font-family:'Nunito',sans-serif; font-size:15px; margin-bottom:10px; text-align:center; resize:vertical; }
+  .card textarea{ text-align:left; min-height:100px; font-size:14px; }
+  .big-btn{ width:100%; padding:13px; border:none; border-radius:14px; background:var(--grass); color:#fff;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:17px; cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.15); margin-top:4px; }
+  .big-btn:active{ transform:translateY(3px); box-shadow:none; }
+  .score-big{ font-family:'Baloo 2',sans-serif; font-size:44px; color:var(--skyberry); margin:4px 0; }
+  .new-best{ color:var(--marigold); font-weight:800; font-size:14px; margin-bottom:8px; }
+  .err-msg{ color:var(--coral); font-size:13px; font-weight:700; margin:-4px 0 10px; min-height:16px; }
+  .hidden{ display:none !important; }
+  .row-2{ display:flex; gap:8px; flex-wrap:wrap; }
+  .row-2 button{ flex:1; min-width:30%; }
+  .settings-section{ text-align:left; border-top:1px solid #eef1f8; margin-top:14px; padding-top:14px; }
+  .settings-section h2{ font-family:'Baloo 2',sans-serif; font-size:15px; margin:0 0 6px; }
+  .goal-preset.active{ background:var(--skyberry); color:#fff; }
+  .level-preset.active{ background:var(--grape); color:#fff; }
+  #levelPresetRow.row-2 button{ min-width:auto; padding:9px 8px; }
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .toggle-row label{ font-size:14px; font-weight:700; }
+  .toggle-row input[type="checkbox"]{ transform:scale(1.4); accent-color:var(--skyberry); }
+  .range-row{ display:flex; align-items:center; gap:10px; }
+  .range-row input[type="range"]{ flex:1; accent-color:var(--skyberry); }
+  .range-row span{ font-family:'Baloo 2',sans-serif; font-weight:800; min-width:34px; text-align:right; }
+
+  /* ---------- victory scene ---------- */
+  .victory-scene{ position:relative; width:100%; height:150px; margin-bottom:6px; overflow:hidden; border-radius:16px;
+    background:linear-gradient(180deg,#BFE3F5,#EAF7FF); }
+  .victory-scene .confetti{ position:absolute; inset:0; }
+  .flake2{ position:absolute; top:-8px; background:#fff; border-radius:50%; opacity:.9; animation:snowfall linear infinite; }
+  .sparkle-note{ font-size:12px; color:#8b93ac; margin-top:-8px; margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+  <div class="scene">
+    <div class="stars" id="stars"></div>
+    <div class="snow" id="snow"></div>
+    <div id="clouds"></div>
+    <div class="sunmoon" id="sunmoon">
+      <svg id="sunGlyph" class="celestial-svg" viewBox="0 0 64 64">
+        <defs>
+          <radialGradient id="sunGrad" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="55%" stop-color="#DFF3FF"/>
+            <stop offset="100%" stop-color="#9FD6EE"/>
+          </radialGradient>
+        </defs>
+        <g class="sun-rays" fill="#DFF3FF">
+          <rect x="29" y="1" width="6" height="12" rx="3" transform="rotate(0 32 32)"/>
+          <rect x="29" y="1" width="6" height="12" rx="3" transform="rotate(45 32 32)"/>
+          <rect x="29" y="1" width="6" height="12" rx="3" transform="rotate(90 32 32)"/>
+          <rect x="29" y="1" width="6" height="12" rx="3" transform="rotate(135 32 32)"/>
+          <rect x="29" y="1" width="6" height="12" rx="3" transform="rotate(180 32 32)"/>
+          <rect x="29" y="1" width="6" height="12" rx="3" transform="rotate(225 32 32)"/>
+          <rect x="29" y="1" width="6" height="12" rx="3" transform="rotate(270 32 32)"/>
+          <rect x="29" y="1" width="6" height="12" rx="3" transform="rotate(315 32 32)"/>
+        </g>
+        <circle cx="32" cy="32" r="15" fill="url(#sunGrad)"/>
+      </svg>
+      <svg id="moonGlyph" class="celestial-svg" viewBox="0 0 64 64" style="opacity:0;">
+        <path d="M40 6 A26 26 0 1 0 40 58 A19 19 0 1 1 40 6 Z" fill="#F2F6FF"/>
+        <circle cx="33" cy="24" r="2.4" fill="#CFE0F0" opacity=".7"/>
+        <circle cx="28" cy="38" r="1.6" fill="#CFE0F0" opacity=".6"/>
+        <circle cx="37" cy="40" r="1.2" fill="#CFE0F0" opacity=".6"/>
+      </svg>
+    </div>
+    <div id="birds"></div>
+    <div class="owl" id="owl">
+      <svg viewBox="0 0 48 44" width="100%" height="100%">
+        <polygon points="9,7 16,19 4,18" fill="#5C6F8C"/>
+        <polygon points="39,7 32,19 44,18" fill="#5C6F8C"/>
+        <ellipse cx="24" cy="25" rx="17" ry="16" fill="#6E82A3"/>
+        <ellipse cx="24" cy="30" rx="9.5" ry="9" fill="#E6EEF7"/>
+        <g class="owl-eyes">
+          <circle cx="16" cy="22" r="7.5" fill="#FFFFFF"/>
+          <circle cx="32" cy="22" r="7.5" fill="#FFFFFF"/>
+          <circle cx="16" cy="22" r="3.4" fill="#22304A"/>
+          <circle cx="32" cy="22" r="3.4" fill="#22304A"/>
+        </g>
+        <polygon points="24,27 20,33 28,33" fill="#F0A94E"/>
+      </svg>
+    </div>
+    <div class="shootingstar" id="shootingstar"><div class="streak-mark"></div></div>
+  </div>
+
+  <header>
+    <div class="title">❄️ Frost Tower</div>
+    <div class="stats-row">
+      <div class="stat">🧱 <span id="progressVal">0</span>/<span id="goalHeaderVal">100</span></div>
+      <div class="stat">⏱ <span id="elapsedVal">00:00</span></div>
+      <div class="stat">🏆 <span id="bestVal">--:--</span></div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <div class="tower-wrap">
+    <div class="tower-viewport" id="towerViewport">
+      <div class="tower-stage" id="towerStage"></div>
+    </div>
+    <div class="base"></div>
+  </div>
+
+  <div class="picker">
+    <div class="blocks-row" id="blocksRow"></div>
+    <div class="controls-row">
+      <div class="timer-pill hidden" id="timerPill">⏱️ Next words in <span id="timerVal">5</span>s</div>
+    </div>
+  </div>
+
+  <!-- Start overlay -->
+  <div class="overlay" id="startOverlay">
+    <div class="card">
+      <h1>Frost Tower ❄️</h1>
+      <p id="startIntro">Read the word on each block, then tap it to build your ice tower all the way to 100 words. Build it as fast as you can!</p>
+      <input id="nameInput" type="text" placeholder="Builder's name (optional)" maxlength="16">
+      <button class="big-btn" id="startBtn">Start Building!</button>
+    </div>
+  </div>
+
+  <!-- Victory overlay -->
+  <div class="overlay hidden" id="victoryOverlay">
+    <div class="card">
+      <h1 id="victoryTitle">Tower Complete!</h1>
+      <div class="victory-scene" id="victoryScene">
+        <div class="confetti" id="victoryConfetti"></div>
+        <svg viewBox="0 0 300 150" width="100%" height="100%" style="position:relative;">
+          <path d="M 20 145 A 125 125 0 0 1 280 145" stroke="#B983FF" stroke-width="13" fill="none"/>
+          <path d="M 33 145 A 112 112 0 0 1 267 145" stroke="#5AA9E6" stroke-width="13" fill="none"/>
+          <path d="M 46 145 A 99 99 0 0 1 254 145" stroke="#4FBF9F" stroke-width="13" fill="none"/>
+          <path d="M 59 145 A 86 86 0 0 1 241 145" stroke="#8ECFEB" stroke-width="13" fill="none"/>
+          <path d="M 72 145 A 73 73 0 0 1 228 145" stroke="#F5B8D0" stroke-width="13" fill="none"/>
+          <path d="M 85 145 A 60 60 0 0 1 215 145" stroke="#EAF7FF" stroke-width="13" fill="none"/>
+          <g transform="translate(150,50)">
+            <!-- crown -->
+            <polygon points="-13,9 -13,1 -6.5,8 0,-1 6.5,8 13,1 13,9" fill="#EAF7FF" stroke="#B9DCEF" stroke-width="1"/>
+            <!-- hair (drawn behind head, flares to shoulders) -->
+            <path d="M -18 20 A 19 19 0 0 1 18 20 L 21 38 Q 0 30 -21 38 Z" fill="#F3E0AC"/>
+            <!-- braid -->
+            <path d="M 15 28 Q 30 36 26 54 Q 24 66 28 76" stroke="#F3E0AC" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <circle cx="28" cy="78" r="4" fill="#8ECFEB"/>
+            <!-- head -->
+            <circle cx="0" cy="24" r="17" fill="#FDEAD9"/>
+            <!-- fringe (smaller, drawn on top of the head so it actually shows, leaves forehead room) -->
+            <ellipse cx="0" cy="12" rx="15" ry="6.5" fill="#F3E0AC"/>
+            <!-- face -->
+            <path d="M -10 21 Q -7.5 19 -5 21" stroke="#C9A876" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+            <path d="M 5 21 Q 7.5 19 10 21" stroke="#C9A876" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+            <circle cx="-7" cy="27" r="2" fill="#22304A"/>
+            <circle cx="7" cy="27" r="2" fill="#22304A"/>
+            <circle cx="-7.6" cy="26.3" r="0.6" fill="#fff"/>
+            <circle cx="6.4" cy="26.3" r="0.6" fill="#fff"/>
+            <ellipse cx="-11.5" cy="31" rx="2.8" ry="1.8" fill="#F5B8D0" opacity=".5"/>
+            <ellipse cx="11.5" cy="31" rx="2.8" ry="1.8" fill="#F5B8D0" opacity=".5"/>
+            <path d="M -5.5 32.5 Q 0 36.5 5.5 32.5" stroke="#22304A" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <!-- gown -->
+            <path d="M -13 40 L 13 40 L 24 78 Q 0 90 -24 78 Z" fill="url(#gownGrad)"/>
+            <circle cx="-8" cy="60" r="2" fill="#fff" opacity=".8"/>
+            <circle cx="6" cy="67" r="1.6" fill="#fff" opacity=".8"/>
+            <!-- arms (simple rounded strokes: one relaxed, one raised) -->
+            <path d="M 12 44 Q 22 56 18 70" stroke="#FDEAD9" stroke-width="7" stroke-linecap="round" fill="none"/>
+            <path d="M -12 44 Q -26 38 -30 22" stroke="#FDEAD9" stroke-width="7" stroke-linecap="round" fill="none"/>
+            <!-- magic wand held in the raised hand -->
+            <path d="M -30 22 L -43 4" stroke="#D9C77A" stroke-width="2.4" stroke-linecap="round"/>
+            <polygon points="-43,-2.8 -41.1,2.1 -36.2,4 -41.1,5.9 -43,10.8 -44.9,5.9 -49.8,4 -44.9,2.1" fill="#FFF3B0" stroke="#F5DE7A" stroke-width="0.6"/>
+            <circle cx="-43" cy="4" r="1.6" fill="#FFFDF2"/>
+            <!-- extra sparkle twinkles around the wand tip -->
+            <circle cx="-33" cy="-6" r="1.6" fill="#fff"/>
+            <circle cx="-56" cy="10" r="1.3" fill="#fff"/>
+            <circle cx="-52" cy="-4" r="1" fill="#fff"/>
+          </g>
+          <defs>
+            <linearGradient id="gownGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#DDF1FB"/>
+              <stop offset="100%" stop-color="#8ECFEB"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="score-big" id="victoryTime">00:00</div>
+      <div class="new-best hidden" id="victoryBestBadge">❄️ New Best Time! ❄️</div>
+      <p id="victorySub">100 words read. Ready to build again?</p>
+      <button class="big-btn" id="victoryAgainBtn">Build Another Tower</button>
+    </div>
+  </div>
+
+  <!-- Settings overlay -->
+  <div class="overlay hidden" id="settingsOverlay">
+    <div class="card" style="position:relative;">
+      <button class="close-x" id="closeSettingsBtn" aria-label="Close settings">×</button>
+      <h1>Settings</h1>
+      <p>Load a level to fill the word list below, or type your own — separated by commas or new lines. Need at least 10.</p>
+      <div class="row-2" id="levelPresetRow" style="margin-bottom:10px;">
+        <button class="pill-btn level-preset" data-level="0">Lvl 1</button>
+        <button class="pill-btn level-preset" data-level="1">Lvl 2</button>
+        <button class="pill-btn level-preset" data-level="2">Lvl 3</button>
+        <button class="pill-btn level-preset" data-level="3">Lvl 4</button>
+        <button class="pill-btn level-preset" data-level="4">Lvl 5</button>
+        <button class="pill-btn level-preset" data-level="5">Lvl 6</button>
+      </div>
+      <textarea id="bankInput" spellcheck="false"></textarea>
+      <div class="err-msg" id="bankErr"></div>
+      <button class="big-btn" id="saveBankBtn">Save Word List</button>
+      <p class="sparkle-note">Loading a level fills the box above — edit it if you like, then press Save.</p>
+
+      <div class="settings-section">
+        <h2>🎯 Tower Goal</h2>
+        <p style="margin:0 0 8px; font-size:13px;">How many words to build the tower to.</p>
+        <div class="row-2" id="goalPresetRow">
+          <button class="pill-btn goal-preset" data-goal="20">20</button>
+          <button class="pill-btn goal-preset" data-goal="50">50</button>
+          <button class="pill-btn goal-preset" data-goal="100">100</button>
+        </div>
+        <div class="range-row" style="margin-top:8px;">
+          <input type="number" id="goalCustomInput" min="5" max="500" step="1" placeholder="Custom" style="width:auto; flex:1; margin-bottom:0;">
+          <button class="pill-btn" id="goalCustomSetBtn">Set</button>
+        </div>
+        <p class="sparkle-note" id="goalCurrentNote" style="margin-top:8px;">Current goal: 100 words. Changing this starts a fresh tower.</p>
+      </div>
+
+      <div class="settings-section">
+        <h2>⏱️ Turn Timer</h2>
+        <div class="toggle-row">
+          <label for="timerToggle">Auto-reshuffle if no word is picked in time</label>
+          <input type="checkbox" id="timerToggle">
+        </div>
+        <div class="range-row">
+          <input type="range" id="timerSecondsRange" min="3" max="10" step="1" value="6">
+          <span id="timerSecondsLabel">6s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  var TOTAL_WORDS_GOAL = 100;
+
+  // Six word banks, progressively harder. Level 1 is the original starter list (minus "I").
+  // Levels 2-6 draw from that same pool plus a small set of harder words reserved for the
+  // top levels only, with the easy/medium/hard mix (by word length, which also drives block
+  // shape) shifting from mostly-easy toward mostly-hard as the level number increases.
+  // Numbers one-ten are spread across Levels 1 and 2. Nothing exceeds 8 letters, and "I" is
+  // left out everywhere as too easy.
+  var LEVELS = [
+    { name:'Level 1', words:[
+      "the","a","to","is","you","and","it","in","was","said","of","my","he","she","we","they",
+      "look","see","like","play","go","come","up","down","big","little","red","blue","yellow","green",
+      "one","two","three","can","run","jump","mom","dad","love"
+    ]},
+    { name:'Level 2', words:[
+      "a","to","is","in","it","on","up","go","my","we","he","she","cat","dog","sun","red","big","run","six","ten",
+      "four","five","seven","eight","nine","jump","play","look","ball","said","some","today","could","does",
+      "little","because","friend","thought","through","around"
+    ]},
+    { name:'Level 3', words:[
+      "the","you","of","was","are","do","who","now","boy","eat","fly","new","cry","few",
+      "about","after","again","back","black","bring","call","came","down","find","first","girl","good","green","have","help","house","kind",
+      "before","better","brother","family","garden","hundred","listen","morning"
+    ]},
+    { name:'Level 4', words:[
+      "to","is","in","my","he","she","cat","dog","red","big",
+      "laugh","live","love","make","many","name","night","open","over","place","small","tell","three","walk","water","world","cold","draw",
+      "myself","notice","number","picture","present","little","because","friend","around","before","brother","hundred"
+    ]},
+    { name:'Level 5', words:[
+      "to","is","my","he","she","big",
+      "play","look","ball","said","some","today","laugh","live","love","make","name","open","place","small","walk","water",
+      "across","animal","behind","circle","frozen","danger","castle","between","believe","promise","treasure",
+      "little","because","friend","thought","through","brother","hundred"
+    ]},
+    { name:'Level 6', words:[
+      "to","my","he","she",
+      "today","some","love","make","open","place","walk","water","world","three","night","tell","small","over",
+      "across","animal","behind","circle","frozen","danger","castle","between","believe","promise","treasure",
+      "little","because","friend","thought","through","around","before","better","brother","family","garden"
+    ]}
+  ];
+  var DEFAULT_BANK = LEVELS[0].words;
+  var COLORS = ["#8ECFEB","#5FC9C0","#B9A6E0","#9D8DF1","#F5B8D0","#E7F3FA",
+                "#9FE7D0","#7FA8E8","#C9B6E4","#6FC3E0","#7ED9A8","#E48FCB",
+                "#A7D8F0","#C3ECD9","#D6C6F0","#79B8E0"];
+  var COLUMNS = 6;
+  var PICKER_MAX_CELL = 38;
+
+  // Tetromino-style shapes. Cells are [col,row] with row 0 = bottom of the piece.
+  var SHAPES = {
+    single: { cells:[[0,0]], w:1, h:1 },
+    domino: { cells:[[0,0],[1,0]], w:2, h:1 },
+    square: { cells:[[0,0],[1,0],[0,1],[1,1]], w:2, h:2 },
+    lshape0: { cells:[[0,0],[0,1],[0,2],[1,0]], w:2, h:3 },
+    jshape: { cells:[[1,0],[1,1],[1,2],[0,0]], w:2, h:3 },
+    tshape: { cells:[[0,0],[1,0],[2,0],[1,1]], w:3, h:2 },
+    ishape: { cells:[[0,0],[1,0],[2,0],[3,0]], w:4, h:1 },
+    ltromino0: { cells:[[0,0],[0,1],[1,0]], w:2, h:2 }
+  };
+  // Rotate a shape 90deg clockwise within its own bounding box.
+  function rotateShape(shape){
+    var cells = shape.cells.map(function(c){ return [c[1], shape.w-1-c[0]]; });
+    return { cells:cells, w:shape.h, h:shape.w };
+  }
+  SHAPES.lshape90 = rotateShape(SHAPES.lshape0);
+  SHAPES.lshape180 = rotateShape(SHAPES.lshape90);
+  SHAPES.lshape270 = rotateShape(SHAPES.lshape180);
+  SHAPES.dominoV = rotateShape(SHAPES.domino);
+  SHAPES.ishapeV = rotateShape(SHAPES.ishape);
+  SHAPES.ltromino90 = rotateShape(SHAPES.ltromino0);
+  SHAPES.ltromino180 = rotateShape(SHAPES.ltromino90);
+  SHAPES.ltromino270 = rotateShape(SHAPES.ltromino180);
+
+  var TIER_SHAPES = {
+    0: ['single'],
+    1: ['domino','dominoV','ltromino0','ltromino90','ltromino180','ltromino270'],
+    2: ['square'],
+    3: ['lshape0','lshape90','lshape180','lshape270','jshape'],
+    4: ['tshape','ishape','ishapeV','lshape0','lshape90','lshape180','lshape270']
+  };
+
+  var state = {
+    WORD_BANK: DEFAULT_BANK.slice(),
+    round: [], visible: [null,null,null],
+    heightmap: new Array(COLUMNS).fill(0), maxHeight: 0, wordsPlaced: 0,
+    wordsGoal: TOTAL_WORDS_GOAL,
+    bestTime: null, playerName: "",
+    consecutiveSimple: 0, cooldown: {}, stage: -1,
+    timerEnabled: false, timerSeconds: 6,
+    startTimestamp: null
+  };
+
+  var els = {};
+  ["towerViewport","towerStage","blocksRow","progressVal","elapsedVal","bestVal","goalHeaderVal","startIntro",
+   "startOverlay","victoryOverlay","nameInput","startBtn","victoryAgainBtn","victoryTime","victoryTitle","victorySub","victoryBestBadge","victoryConfetti",
+   "stars","snow","clouds","sunmoon","sunGlyph","moonGlyph","birds","owl","shootingstar","settingsBtn","settingsOverlay","bankInput",
+   "bankErr","saveBankBtn","closeSettingsBtn","timerToggle","timerSecondsRange","timerSecondsLabel","timerPill","timerVal",
+   "goalCustomInput","goalCustomSetBtn","goalCurrentNote"
+  ].forEach(function(id){ els[id] = document.getElementById(id); });
+
+  // ---------- storage helpers ----------
+  async function loadBestTime(){
+    try{ var r = await window.storage.get('wordtower_besttime', false); return r && r.value ? parseFloat(r.value) : null; }
+    catch(e){ return null; }
+  }
+  async function saveBestTime(v){ try{ await window.storage.set('wordtower_besttime', String(v), false); }catch(e){} }
+  async function loadGoal(){
+    try{ var r = await window.storage.get('wordtower_goal', false); return r && r.value ? (parseInt(r.value,10)||null) : null; }
+    catch(e){ return null; }
+  }
+  async function saveGoal(v){ try{ await window.storage.set('wordtower_goal', String(v), false); }catch(e){} }
+  async function loadName(){
+    try{ var r = await window.storage.get('wordtower_name', false); return r && r.value ? r.value : ""; }
+    catch(e){ return ""; }
+  }
+  async function saveName(v){ try{ await window.storage.set('wordtower_name', v, false); }catch(e){} }
+  async function loadBank(){
+    try{
+      var r = await window.storage.get('wordtower_bank', false);
+      if(r && r.value){ var arr = JSON.parse(r.value); if(Array.isArray(arr) && arr.length>=10) return arr; }
+      return null;
+    }catch(e){ return null; }
+  }
+  async function saveBank(arr){ try{ await window.storage.set('wordtower_bank', JSON.stringify(arr), false); }catch(e){} }
+  async function loadTimerSettings(){
+    try{
+      var r = await window.storage.get('wordtower_timer', false);
+      if(r && r.value){ return JSON.parse(r.value); }
+      return null;
+    }catch(e){ return null; }
+  }
+  async function saveTimerSettings(){
+    try{ await window.storage.set('wordtower_timer', JSON.stringify({enabled:state.timerEnabled, seconds:state.timerSeconds}), false); }catch(e){}
+  }
+
+  // ---------- helpers ----------
+  function shuffleCopy(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+  function sampleN(arr,n){ return shuffleCopy(arr).slice(0,n); }
+  function randColor(){ return COLORS[Math.floor(Math.random()*COLORS.length)]; }
+  function tierFor(word){
+    var len = word.length;
+    if(len<=2) return 0;
+    if(len===3) return 1;
+    if(len===4) return 2;
+    if(len===5) return 3;
+    return 4;
+  }
+  function isSimple(word){ return tierFor(word)===0; }
+
+  function formatMMSS(totalSeconds){
+    var s = Math.max(0, Math.floor(totalSeconds));
+    var m = Math.floor(s/60), sec = s%60;
+    return (m<10?'0':'')+m+':'+(sec<10?'0':'')+sec;
+  }
+  function formatPrecise(totalSeconds){
+    var m = Math.floor(totalSeconds/60);
+    var sec = totalSeconds - m*60;
+    return (m<10?'0':'')+m+':'+(sec<10?'0':'')+sec.toFixed(1);
+  }
+
+  // ---------- word cooldown (a freshly-introduced word can't reappear for 3 turns) ----------
+  function tickCooldown(){
+    Object.keys(state.cooldown).forEach(function(w){
+      state.cooldown[w] -= 1;
+      if(state.cooldown[w]<=0) delete state.cooldown[w];
+    });
+  }
+  function isOnCooldown(w){ return !!state.cooldown[w]; }
+  function markCooldown(w){ state.cooldown[w] = 3; }
+
+  // Choose 3 distinct words from pool: at most one "simple" (tier-0) word, avoiding words on cooldown where possible.
+  function pickTripleRespectingRules(pool){
+    var eligible = pool.filter(function(w){ return !isOnCooldown(w); });
+    var usablePool = eligible.length>=3 ? eligible : pool;
+    var simples = usablePool.filter(isSimple);
+    var complex = usablePool.filter(function(w){ return !isSimple(w); });
+    var chosen = [];
+    if(simples.length>0){ chosen.push(simples[Math.floor(Math.random()*simples.length)]); }
+    var complexShuffled = shuffleCopy(complex);
+    for(var i=0; i<complexShuffled.length && chosen.length<3; i++){ chosen.push(complexShuffled[i]); }
+    if(chosen.length<3){
+      var remaining = shuffleCopy(usablePool.filter(function(w){ return chosen.indexOf(w)===-1; }));
+      for(var j=0; j<remaining.length && chosen.length<3; j++){ chosen.push(remaining[j]); }
+    }
+    if(chosen.length<3){
+      var lastResort = shuffleCopy(pool.filter(function(w){ return chosen.indexOf(w)===-1; }));
+      for(var k=0; k<lastResort.length && chosen.length<3; k++){ chosen.push(lastResort[k]); }
+    }
+    return shuffleCopy(chosen);
+  }
+
+  // Choose a single replacement word, excluding hardExclude words and (where possible) cooldown words.
+  function pickReplacementWord(pool, hardExclude){
+    var base = pool.filter(function(w){ return hardExclude.indexOf(w)===-1; });
+    var noCooldown = base.filter(function(w){ return !isOnCooldown(w); });
+    var candidates = noCooldown.length>0 ? noCooldown : base;
+    if(candidates.length===0) candidates = pool;
+    return candidates[Math.floor(Math.random()*candidates.length)];
+  }
+
+  function makeBlock(word){
+    var tier = tierFor(word);
+    var options = TIER_SHAPES[tier];
+    var shapeName = options[Math.floor(Math.random()*options.length)];
+    return { word:word, shapeName:shapeName, shape:SHAPES[shapeName], color:randColor() };
+  }
+
+  // ---------- audio ----------
+  var audioCtx = null, masterBus = null;
+  function getCtx(){
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+    if(!masterBus){
+      var comp = audioCtx.createDynamicsCompressor();
+      comp.threshold.value = -22; comp.knee.value = 24; comp.ratio.value = 10;
+      comp.attack.value = 0.003; comp.release.value = 0.22;
+      var g = audioCtx.createGain(); g.gain.value = 0.9;
+      comp.connect(g).connect(audioCtx.destination);
+      masterBus = comp;
+    }
+    return audioCtx;
+  }
+  function playChime(){
+    try{
+      var ctx = getCtx();
+      var notes = [523.25,659.25,783.99,1046.5];
+      var t0 = ctx.currentTime;
+      notes.forEach(function(freq,i){
+        var osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.type='triangle'; osc.frequency.value=freq;
+        var start = t0 + i*0.09;
+        gain.gain.setValueAtTime(0.0001,start);
+        gain.gain.exponentialRampToValueAtTime(0.22,start+0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001,start+0.28);
+        osc.connect(gain).connect(masterBus);
+        osc.start(start); osc.stop(start+0.3);
+      });
+    }catch(e){}
+  }
+  function playTone(freq, start, dur, type, peakGain){
+    var ctx = getCtx();
+    var osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = type; osc.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.exponentialRampToValueAtTime(peakGain, start+0.025);
+    g.gain.exponentialRampToValueAtTime(0.0001, start+dur);
+    osc.connect(g).connect(masterBus);
+    osc.start(start); osc.stop(start+dur+0.05);
+  }
+  function playCelebration(){
+    try{
+      var ctx = getCtx();
+      var t0 = ctx.currentTime;
+      var arp = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+      arp.forEach(function(freq,i){
+        var start = t0 + i*0.1;
+        playTone(freq, start, 0.3, 'triangle', 0.22);
+        playTone(freq*2, start, 0.22, 'sine', 0.06);
+      });
+      var chordStart = t0 + arp.length*0.1 + 0.03;
+      [1046.5, 1318.51, 1567.98].forEach(function(freq,i){
+        playTone(freq, chordStart, 0.9, i===0 ? 'sawtooth' : 'triangle', 0.15);
+      });
+      // icy sparkle twinkle flourish
+      var sparkle = [2093.0,2349.3,1864.66,2637.0,1567.98,2093.0,1318.51];
+      sparkle.forEach(function(freq,i){
+        playTone(freq, chordStart+0.4+i*0.09, 0.22, 'sine', 0.09);
+      });
+    }catch(e){}
+  }
+
+  // ---------- sky stages (progress toward the 100-word goal) ----------
+  var STAGES = [
+    { top:'#2B3A67', bottom:'#6B7FB0', text:true,  name:'early-morning' },
+    { top:'#7FC1E0', bottom:'#E8F7F2', text:false, name:'morning' },
+    { top:'#5AB6E8', bottom:'#F0FBFF', text:false, name:'noon' },
+    { top:'#3AAFA9', bottom:'#B983FF', text:false, name:'aurora-dusk' },
+    { top:'#2E2A5E', bottom:'#6A4C93', text:true,  name:'evening' },
+    { top:'#12103A', bottom:'#2C2A63', text:true,  name:'starry-night' },
+    { top:'#04050F', bottom:'#0A1130', text:true,  name:'deep-night' }
+  ];
+  function stageForProgress(n){
+    var frac = n / state.wordsGoal;
+    if(frac<1/7) return 0;
+    if(frac<2/7) return 1;
+    if(frac<3/7) return 2;
+    if(frac<4/7) return 3;
+    if(frac<5/7) return 4;
+    if(frac<6/7) return 5;
+    return 6;
+  }
+  function applyStage(idx){
+    if(idx===state.stage) return;
+    state.stage = idx;
+    var s = STAGES[idx];
+    document.body.style.setProperty('--sky-top', s.top);
+    document.body.style.setProperty('--sky-bottom', s.bottom);
+    document.body.classList.toggle('night-text', s.text);
+
+    var showStars = idx>=4;
+    els.stars.style.opacity = showStars ? (idx>=6?1:(idx===5?0.85:0.35)) : 0;
+
+    var isSunStage = idx>=1 && idx<=3;
+    els.sunmoon.style.opacity = (idx===0 || idx>=1) ? (idx===0?0.45:1) : 0;
+    els.sunGlyph.style.opacity = isSunStage ? 1 : 0;
+    els.moonGlyph.style.opacity = isSunStage ? 0 : 1;
+    if(isSunStage){
+      els.sunmoon.style.left = idx===1 ? '14%' : (idx===2 ? '46%' : '76%');
+      els.sunmoon.style.top = idx===1 ? '18%' : (idx===2 ? '8%' : '20%');
+      var sunSize = idx===2 ? '58px' : '46px';
+      els.sunmoon.style.width = sunSize; els.sunmoon.style.height = sunSize;
+    } else {
+      els.sunmoon.style.left = '72%';
+      els.sunmoon.style.top = '12%';
+      els.sunmoon.style.width = '40px'; els.sunmoon.style.height = '40px';
+      els.sunmoon.style.opacity = idx===0 ? 0.45 : (idx>=4?1:0);
+    }
+
+    var showBirds = idx>=1 && idx<=3;
+    els.birds.style.display = showBirds ? 'block' : 'none';
+
+    els.owl.style.opacity = idx>=5 ? 1 : 0;
+
+    document.querySelectorAll('.cloud').forEach(function(c){ c.style.opacity = idx>=5 ? 0.12 : 0.9; });
+  }
+
+  var shootingTimer = null;
+  function scheduleShootingStar(){
+    if(shootingTimer) clearTimeout(shootingTimer);
+    shootingTimer = setTimeout(function(){
+      if(state.stage===6){
+        els.shootingstar.style.left = (20+Math.random()*40)+'%';
+        els.shootingstar.style.top = (8+Math.random()*20)+'%';
+        els.shootingstar.classList.remove('active');
+        void els.shootingstar.offsetWidth;
+        els.shootingstar.classList.add('active');
+      }
+      scheduleShootingStar();
+    }, 3500 + Math.random()*4000);
+  }
+
+  function buildAmbient(){
+    var starHtml = '';
+    for(var i=0;i<28;i++){
+      starHtml += '<div class="star" style="left:'+(Math.random()*100)+'%; top:'+(Math.random()*68)+'%; animation-delay:'+(Math.random()*2)+'s;"></div>';
+    }
+    els.stars.innerHTML = starHtml;
+
+    var snowHtml = '';
+    for(var s=0;s<26;s++){
+      var size = 3+Math.random()*4;
+      snowHtml += '<div class="flake" style="left:'+(Math.random()*100)+'%; width:'+size+'px; height:'+size+'px; '+
+        'animation-duration:'+(7+Math.random()*8)+'s; animation-delay:'+(Math.random()*8)+'s; opacity:'+(0.4+Math.random()*0.5)+';"></div>';
+    }
+    els.snow.innerHTML = snowHtml;
+
+    var cloudHtml = '';
+    var positions = [[6,'12%','58px'],[62,'20%','86px'],[20,'42%','64px'],[74,'6%','48px']];
+    positions.forEach(function(p){
+      cloudHtml += '<div class="cloud" style="left:'+p[0]+'%; top:'+p[1]+'; width:'+p[2]+'; height:'+(parseInt(p[2])*0.55)+'px;"></div>';
+    });
+    els.clouds.innerHTML = cloudHtml;
+
+    var birdSvg = '<svg width="30" height="14" viewBox="0 0 30 14"><path class="wing" d="M2 9 C 8 1, 10 1, 15 7 C 20 1, 22 1, 28 9" fill="none" stroke="#4A4A5A" stroke-width="2.2" stroke-linecap="round"/></svg>';
+    var birdHtml = '';
+    [ [0,'18%','15s','0s'], [1,'28%','12s','3s'], [2,'12%','17s','6s'] ].forEach(function(b){
+      birdHtml += '<div class="bird" style="top:'+b[1]+'; animation:flyacross '+b[2]+' linear infinite, bob 1s ease-in-out infinite alternate; animation-delay:'+b[3]+', 0s; opacity:.85;">'+birdSvg+'</div>';
+    });
+    els.birds.innerHTML = birdHtml;
+
+    els.owl.style.left = '80%';
+    els.owl.style.top = '14%';
+
+    scheduleShootingStar();
+  }
+
+  // ---------- tower grid geometry ----------
+  var cellPx = 40;
+  function recomputeCellPx(){
+    var vp = els.towerViewport;
+    var available = vp.clientWidth;
+    cellPx = Math.max(20, Math.min(46, Math.floor(available / COLUMNS)));
+  }
+
+  function fitStageScale(){
+    var vp = els.towerViewport;
+    var stageHeightPx = Math.max(state.maxHeight,1) * cellPx;
+    var availableH = vp.clientHeight - 6;
+    var scale = Math.min(1, availableH / stageHeightPx);
+    els.towerStage.style.width = (COLUMNS*cellPx)+'px';
+    els.towerStage.style.height = stageHeightPx+'px';
+    els.towerStage.style.transform = 'scale('+scale+')';
+  }
+
+  function renderPieceInto(container, shape, color, word, size, showLabel){
+    if(showLabel===undefined) showLabel = true;
+    container.style.width = (shape.w*size)+'px';
+    container.style.height = (shape.h*size)+'px';
+    var frag = document.createDocumentFragment();
+    shape.cells.forEach(function(cell){
+      var col = cell[0], row = cell[1];
+      var div = document.createElement('div');
+      div.className = 'cell';
+      div.style.width = (size-3)+'px';
+      div.style.height = (size-3)+'px';
+      div.style.left = (col*size+1.5)+'px';
+      div.style.bottom = (row*size+1.5)+'px';
+      div.style.background = color;
+      frag.appendChild(div);
+    });
+    if(showLabel){
+      var label = document.createElement('div');
+      label.className = 'piece-label';
+      label.textContent = word;
+      label.style.fontSize = Math.max(9, Math.min(18, size*0.38))+'px';
+      frag.appendChild(label);
+    }
+    container.appendChild(frag);
+  }
+
+  function computeLanding(shape, colStart){
+    var minRowByCol = {}, maxRowByCol = {};
+    shape.cells.forEach(function(cell){
+      var c = cell[0], r = cell[1];
+      if(!(c in minRowByCol) || r<minRowByCol[c]) minRowByCol[c] = r;
+      if(!(c in maxRowByCol) || r>maxRowByCol[c]) maxRowByCol[c] = r;
+    });
+    var landing = 0;
+    Object.keys(minRowByCol).forEach(function(cStr){
+      var c = parseInt(cStr,10);
+      var absCol = colStart + c;
+      var required = state.heightmap[absCol] - minRowByCol[c];
+      if(required>landing) landing = required;
+    });
+    return { landing:landing, minRowByCol:minRowByCol, maxRowByCol:maxRowByCol };
+  }
+
+  function addPieceToTower(block){
+    var shape = block.shape;
+    var maxStart = COLUMNS - shape.w;
+
+    var minLanding = null, lowestCandidates = [];
+    for(var cs=0; cs<=maxStart; cs++){
+      var result = computeLanding(shape, cs);
+      if(minLanding===null || result.landing < minLanding){
+        minLanding = result.landing;
+        lowestCandidates = [{ colStart:cs, result:result }];
+      } else if(result.landing === minLanding){
+        lowestCandidates.push({ colStart:cs, result:result });
+      }
+    }
+
+    var bestGap = null, bestCandidates = [];
+    lowestCandidates.forEach(function(cand){
+      var gap = 0;
+      Object.keys(cand.result.minRowByCol).forEach(function(cStr){
+        var c = parseInt(cStr,10);
+        var absCol = cand.colStart + c;
+        gap += (minLanding + cand.result.minRowByCol[c]) - state.heightmap[absCol];
+      });
+      if(bestGap===null || gap<bestGap){ bestGap = gap; bestCandidates = [cand]; }
+      else if(gap===bestGap){ bestCandidates.push(cand); }
+    });
+
+    var chosen = bestCandidates.reduce(function(leftmost, cand){
+      return cand.colStart < leftmost.colStart ? cand : leftmost;
+    }, bestCandidates[0]);
+    var colStart = chosen.colStart;
+    var landing = minLanding;
+    var picked = chosen.result;
+
+    Object.keys(picked.maxRowByCol).forEach(function(cStr){
+      var c = parseInt(cStr,10);
+      var absCol = colStart + c;
+      var top = landing + picked.maxRowByCol[c] + 1;
+      if(top>state.heightmap[absCol]) state.heightmap[absCol] = top;
+    });
+    state.maxHeight = Math.max.apply(null, state.heightmap);
+
+    recomputeCellPx();
+    var pieceEl = document.createElement('div');
+    pieceEl.className = 'tower-piece';
+    pieceEl.style.left = (colStart*cellPx)+'px';
+    pieceEl.style.bottom = (landing*cellPx)+'px';
+    renderPieceInto(pieceEl, shape, block.color, block.word, cellPx, true);
+    els.towerStage.appendChild(pieceEl);
+
+    fitStageScale();
+  }
+
+  // ---------- timers ----------
+  var elapsedTimerId = null;
+  function startElapsedTimer(){
+    clearElapsedTimer();
+    elapsedTimerId = setInterval(function(){
+      var sec = Math.floor((Date.now()-state.startTimestamp)/1000);
+      els.elapsedVal.textContent = formatMMSS(sec);
+    }, 1000);
+  }
+  function clearElapsedTimer(){ if(elapsedTimerId){ clearInterval(elapsedTimerId); elapsedTimerId=null; } }
+
+  var turnTimerId = null, turnRemaining = 0;
+  function startTurnTimer(){
+    clearTurnTimer();
+    if(!state.timerEnabled){ els.timerPill.classList.add('hidden'); return; }
+    turnRemaining = state.timerSeconds;
+    els.timerPill.classList.remove('hidden');
+    els.timerVal.textContent = turnRemaining;
+    turnTimerId = setInterval(function(){
+      turnRemaining -= 1;
+      if(turnRemaining<=0){
+        clearInterval(turnTimerId); turnTimerId = null;
+        autoReshuffle();
+      } else {
+        els.timerVal.textContent = turnRemaining;
+      }
+    }, 1000);
+  }
+  function clearTurnTimer(){ if(turnTimerId){ clearInterval(turnTimerId); turnTimerId=null; } els.timerPill.classList.add('hidden'); }
+
+  function isPlaying(){
+    return els.startOverlay.classList.contains('hidden') && els.victoryOverlay.classList.contains('hidden');
+  }
+
+  // ---------- round / turn logic ----------
+  function startNewRound(){
+    state.round = sampleN(state.WORD_BANK, Math.min(10, state.WORD_BANK.length));
+    state.heightmap = new Array(COLUMNS).fill(0);
+    state.maxHeight = 0;
+    state.wordsPlaced = 0;
+    state.consecutiveSimple = 0;
+    state.cooldown = {};
+    state.startTimestamp = Date.now();
+    var initialWords = pickTripleRespectingRules(state.round);
+    initialWords.forEach(markCooldown);
+    state.visible = initialWords.map(makeBlock);
+    els.towerStage.innerHTML = '';
+    renderVisible();
+    renderHeader();
+    recomputeCellPx();
+    fitStageScale();
+    applyStage(0);
+    startElapsedTimer();
+  }
+
+  function renderHeader(){
+    els.progressVal.textContent = state.wordsPlaced;
+    els.bestVal.textContent = state.bestTime===null ? '--:--' : formatPrecise(state.bestTime);
+  }
+
+  function renderVisible(){
+    els.blocksRow.innerHTML = '';
+    state.visible.forEach(function(block, idx){
+      var btn = document.createElement('button');
+      btn.className = 'word-btn';
+      btn.setAttribute('aria-label','Word: '+block.word);
+      var shapeWrap = document.createElement('div');
+      shapeWrap.className = 'piece-shape';
+      btn.appendChild(shapeWrap);
+      var labelEl = document.createElement('div');
+      labelEl.className = 'word-label';
+      labelEl.textContent = block.word;
+      btn.appendChild(labelEl);
+      btn.addEventListener('click', function(){ onBlockPick(idx); });
+      els.blocksRow.appendChild(btn);
+      requestAnimationFrame(function(){
+        var innerW = btn.clientWidth - 10;
+        var shapeAreaH = (btn.clientHeight - 26) * 0.85;
+        var size = Math.floor(Math.min(innerW/block.shape.w, shapeAreaH/block.shape.h, PICKER_MAX_CELL));
+        renderPieceInto(shapeWrap, block.shape, block.color, block.word, size, false);
+      });
+    });
+    startTurnTimer();
+  }
+
+  async function onBlockPick(idx){
+    var block = state.visible[idx];
+    addPieceToTower(block);
+    playChime();
+    state.wordsPlaced += 1;
+    renderHeader();
+    applyStage(stageForProgress(state.wordsPlaced));
+
+    if(state.wordsPlaced >= state.wordsGoal){
+      onRoundComplete();
+      return;
+    }
+
+    tickCooldown();
+
+    // Track consecutive simple-word picks: after 3 in a row, next turn must have zero simple words.
+    if(isSimple(block.word)){ state.consecutiveSimple += 1; } else { state.consecutiveSimple = 0; }
+    var lockSimpleOut = state.consecutiveSimple >= 3;
+
+    var otherWords = state.visible.filter(function(b,i){ return i!==idx; }).map(function(b){ return b.word; });
+    var otherHasSimple = otherWords.some(isSimple);
+    var forceNoSimple = otherHasSimple || lockSimpleOut;
+
+    var pool = state.round;
+    if(forceNoSimple){
+      var filtered = pool.filter(function(w){ return !isSimple(w); });
+      if(filtered.length>0) pool = filtered;
+    }
+    // Rule: the replacement can never be the word just selected, plus the 3-turn cooldown.
+    var hardExclude = otherWords.concat([block.word]);
+    var newWord = pickReplacementWord(pool, hardExclude);
+    markCooldown(newWord);
+    state.visible[idx] = makeBlock(newWord);
+
+    if(lockSimpleOut){
+      state.visible.forEach(function(b, i){
+        if(i!==idx && b && isSimple(b.word)){
+          var others = state.visible.filter(function(bb,ii){ return ii!==i; }).map(function(bb){ return bb.word; });
+          var pool2 = state.round.filter(function(w){ return !isSimple(w); });
+          var repl = pickReplacementWord(pool2.length>0 ? pool2 : state.round, others);
+          markCooldown(repl);
+          state.visible[i] = makeBlock(repl);
+        }
+      });
+      state.consecutiveSimple = 0;
+    }
+
+    renderVisible();
+  }
+
+  function autoReshuffle(){
+    if(!isPlaying()) return;
+    var newWords = pickTripleRespectingRules(state.round);
+    newWords.forEach(markCooldown);
+    state.visible = newWords.map(makeBlock);
+    renderVisible();
+  }
+
+  function onRoundComplete(){
+    clearTurnTimer();
+    clearElapsedTimer();
+    var finalMs = Date.now() - state.startTimestamp;
+    var finalSeconds = Math.round(finalMs/100)/10;
+    var isBest = state.bestTime===null || finalSeconds < state.bestTime;
+    if(isBest){ state.bestTime = finalSeconds; saveBestTime(state.bestTime); }
+    renderHeader();
+
+    playCelebration();
+    buildVictoryConfetti();
+    els.victoryTime.textContent = formatPrecise(finalSeconds);
+    els.victoryBestBadge.classList.toggle('hidden', !isBest);
+    var name = state.playerName ? state.playerName+', ' : '';
+    els.victoryTitle.textContent = name + 'Tower Complete!';
+    els.victorySub.textContent = state.bestTime===null
+      ? state.wordsGoal+' words read. Ready to build again?'
+      : state.wordsGoal+' words read. Best time: '+formatPrecise(state.bestTime)+'.';
+    els.victoryOverlay.classList.remove('hidden');
+  }
+
+  function buildVictoryConfetti(){
+    var html = '';
+    for(var i=0;i<16;i++){
+      var size = 3+Math.random()*4;
+      html += '<div class="flake2" style="left:'+(Math.random()*100)+'%; width:'+size+'px; height:'+size+'px; '+
+        'animation-duration:'+(2.5+Math.random()*2)+'s; animation-delay:'+(Math.random()*1.5)+'s;"></div>';
+    }
+    els.victoryConfetti.innerHTML = html;
+  }
+
+  // ---------- settings ----------
+  function parseBankText(text){
+    var raw = text.split(/[\n,]/).map(function(w){ return w.trim(); }).filter(Boolean);
+    var seen = {}; var out = [];
+    raw.forEach(function(w){
+      var key = w.toLowerCase();
+      if(!seen[key]){ seen[key]=true; out.push(w); }
+    });
+    return out;
+  }
+  function openSettings(){
+    els.bankInput.value = state.WORD_BANK.join(', ');
+    els.bankErr.textContent = '';
+    els.timerToggle.checked = state.timerEnabled;
+    els.timerSecondsRange.value = state.timerSeconds;
+    els.timerSecondsLabel.textContent = state.timerSeconds+'s';
+    updateGoalUI();
+    updateLevelHighlight();
+    clearTurnTimer();
+    els.settingsOverlay.classList.remove('hidden');
+  }
+  function closeSettings(){
+    els.settingsOverlay.classList.add('hidden');
+    if(isPlaying()) startTurnTimer();
+  }
+  async function onSaveBank(){
+    var words = parseBankText(els.bankInput.value);
+    if(words.length<10){
+      els.bankErr.textContent = 'Please enter at least 10 words (you have '+words.length+').';
+      return;
+    }
+    state.WORD_BANK = words;
+    await saveBank(words);
+    els.settingsOverlay.classList.add('hidden');
+    startNewRound();
+  }
+  async function onLoadLevel(idx){
+    state.WORD_BANK = LEVELS[idx].words.slice();
+    els.bankInput.value = state.WORD_BANK.join(', ');
+    els.bankErr.textContent = '';
+    await saveBank(state.WORD_BANK);
+    updateLevelHighlight();
+  }
+  function updateLevelHighlight(){
+    var current = els.bankInput.value.trim();
+    document.querySelectorAll('.level-preset').forEach(function(btn){
+      var idx = parseInt(btn.dataset.level,10);
+      var matches = LEVELS[idx].words.join(', ') === current;
+      btn.classList.toggle('active', matches);
+    });
+  }
+  function onTimerToggleChange(){
+    state.timerEnabled = els.timerToggle.checked;
+    saveTimerSettings();
+  }
+  function onTimerSecondsChange(){
+    state.timerSeconds = parseInt(els.timerSecondsRange.value,10);
+    els.timerSecondsLabel.textContent = state.timerSeconds+'s';
+    saveTimerSettings();
+  }
+
+  // ---------- tower goal ----------
+  function updateGoalUI(){
+    els.goalHeaderVal.textContent = state.wordsGoal;
+    els.goalCustomInput.value = state.wordsGoal;
+    els.goalCurrentNote.textContent = 'Current goal: '+state.wordsGoal+' words. Changing this starts a fresh tower.';
+    els.startIntro.textContent = 'Read the word on each block, then tap it to build your ice tower all the way to '+state.wordsGoal+' words. Build it as fast as you can!';
+    document.querySelectorAll('.goal-preset').forEach(function(btn){
+      btn.classList.toggle('active', parseInt(btn.dataset.goal,10)===state.wordsGoal);
+    });
+  }
+  function applyGoal(n){
+    n = Math.max(5, Math.min(500, Math.round(n) || state.wordsGoal));
+    state.wordsGoal = n;
+    saveGoal(n);
+    updateGoalUI();
+    els.settingsOverlay.classList.add('hidden');
+    startNewRound();
+  }
+
+  // ---------- wire up ----------
+  els.victoryAgainBtn.addEventListener('click', function(){ els.victoryOverlay.classList.add('hidden'); startNewRound(); });
+  els.startBtn.addEventListener('click', async function(){
+    state.playerName = els.nameInput.value.trim();
+    if(state.playerName) saveName(state.playerName);
+    els.startOverlay.classList.add('hidden');
+    startNewRound();
+  });
+  els.settingsBtn.addEventListener('click', openSettings);
+  els.closeSettingsBtn.addEventListener('click', closeSettings);
+  els.saveBankBtn.addEventListener('click', onSaveBank);
+  document.querySelectorAll('.level-preset').forEach(function(btn){
+    btn.addEventListener('click', function(){ onLoadLevel(parseInt(btn.dataset.level,10)); });
+  });
+  els.timerToggle.addEventListener('change', onTimerToggleChange);
+  els.timerSecondsRange.addEventListener('input', onTimerSecondsChange);
+  document.querySelectorAll('.goal-preset').forEach(function(btn){
+    btn.addEventListener('click', function(){ applyGoal(parseInt(btn.dataset.goal,10)); });
+  });
+  els.goalCustomSetBtn.addEventListener('click', function(){
+    applyGoal(parseInt(els.goalCustomInput.value,10));
+  });
+  window.addEventListener('resize', function(){ recomputeCellPx(); fitStageScale(); });
+
+  // ---------- init ----------
+  (async function init(){
+    buildAmbient();
+    state.bestTime = await loadBestTime();
+    state.playerName = await loadName();
+    if(state.playerName) els.nameInput.value = state.playerName;
+    var savedBank = await loadBank();
+    if(savedBank) state.WORD_BANK = savedBank;
+    var savedTimer = await loadTimerSettings();
+    if(savedTimer){
+      state.timerEnabled = !!savedTimer.enabled;
+      state.timerSeconds = savedTimer.seconds || 6;
+    }
+    var savedGoal = await loadGoal();
+    if(savedGoal) state.wordsGoal = savedGoal;
+    updateGoalUI();
+    renderHeader();
+  })();
+
+})();
+</script>
+<script>(function(){
+if(window.top===window.self)return;
+var WRAPPER_ORIGIN="https://sharable.link";
+function retarget(raw,isDownload){
+var here,url;
+try{here=new URL(location.href);url=new URL(raw,location.href)}catch(e){return null}
+if(url.protocol!=="http:"&&url.protocol!=="https:")return null;
+if(url.origin!==here.origin)return url.href;
+if(isDownload||url.pathname===here.pathname)return null;
+return WRAPPER_ORIGIN+url.pathname+url.search+url.hash}
+document.addEventListener("click",function(e){
+if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+if(document.querySelector("base[target]"))return;
+var a=e.target&&e.target.closest?e.target.closest("a[href]"):null;
+if(!a||(a.target&&a.target!=="_self"))return;
+var href=retarget(a.getAttribute("href"),a.hasAttribute("download"));
+if(!href)return;
+a.href=href;a.target="_top"});
+document.addEventListener("submit",function(e){
+var form=e.target;
+if(e.defaultPrevented||!form||form.target)return;
+var href=retarget(form.getAttribute("action"),false);
+if(!href)return;
+form.action=href;form.target="_top"})})();</script></body>
+</html>

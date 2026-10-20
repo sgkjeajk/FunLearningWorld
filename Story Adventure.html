@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Story Adventure</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #fff2cc 0%, #ffd6e8 50%, #d6f0ff 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.8s ease;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+h1 {
+  text-align: center; color: #ff1493; margin-bottom: 6px; font-size: 34px;
+  text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(255,105,180,0.25);
+  animation: wiggle 3s ease-in-out infinite;
+}
+@keyframes wiggle { 0%,100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+.subtitle { text-align: center; color: #6b6b6b; margin-bottom: 30px; font-size: 15px; font-weight: 600; }
+
+/* LIBRARY GRID */
+.story-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.category-section { margin-bottom: 30px; }
+.category-title {
+  font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 14px;
+  display: inline-block; padding: 8px 18px; border-radius: 14px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.12);
+}
+.category-title.short { background: linear-gradient(135deg, #38b000, #70e000); }
+.category-title.medium { background: linear-gradient(135deg, #f9844a, #ff5400); }
+.category-title.long { background: linear-gradient(135deg, #9d4edd, #5a189a); }
+.category-empty { color: #999; font-size: 13px; font-style: italic; padding: 4px 4px 10px; }
+
+.category-select-wrap { margin-bottom: 24px; }
+.category-select {
+  width: 100%; padding: 16px 20px; font-size: 17px; font-weight: 800; color: #fff;
+  border: none; border-radius: 18px; cursor: pointer; appearance: none;
+  background: linear-gradient(135deg, #ff69b4, #ff1493);
+  box-shadow: 0 6px 0 #c2006f, 0 8px 16px rgba(0,0,0,0.12);
+  background-image: linear-gradient(135deg, #ff69b4, #ff1493),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: left, right 18px center;
+  background-size: auto, 22px;
+}
+.category-select:active { transform: translateY(4px); box-shadow: 0 2px 0 #c2006f, 0 4px 10px rgba(0,0,0,0.1); }
+.story-card {
+  border-radius: 24px; padding: 22px 16px; text-align: center; cursor: pointer;
+  border: none; position: relative; overflow: hidden;
+  box-shadow: 0 8px 0 rgba(0,0,0,0.15), 0 10px 20px rgba(0,0,0,0.1);
+  transition: transform 0.15s, box-shadow 0.15s;
+  animation: popCard 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.story-card:active { transform: translateY(6px); box-shadow: 0 2px 0 rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.1); }
+.story-card:hover { transform: translateY(-3px) scale(1.03); }
+@keyframes popCard { from { opacity: 0; transform: scale(0.7) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+.story-card .icon {
+  font-size: 60px; display: block; margin-bottom: 10px;
+  animation: floaty 2.6s ease-in-out infinite;
+  filter: drop-shadow(0 6px 4px rgba(0,0,0,0.15));
+}
+@keyframes floaty { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
+
+.story-card h4 { font-size: 17px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.25); margin-bottom: 4px; }
+.story-card p { font-size: 12px; color: rgba(255,255,255,0.9); font-weight: 700; }
+
+.card-c1 { background: linear-gradient(160deg, #ffb703, #fb5607); }
+.card-c2 { background: linear-gradient(160deg, #8ecae6, #219ebc); }
+.card-c3 { background: linear-gradient(160deg, #ffafcc, #ff5da2); }
+.card-c4 { background: linear-gradient(160deg, #a0e7a0, #38b000); }
+.card-c5 { background: linear-gradient(160deg, #c8b6ff, #9d4edd); }
+.card-c6 { background: linear-gradient(160deg, #ffd6a5, #ff9f1c); }
+
+/* GAME VIEW */
+.game-card {
+  background: white; border-radius: 30px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  display: none; border: 6px solid #fff0f6; position: relative; overflow: hidden;
+}
+.game-card.active { display: block; animation: popCard 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+.scene-art {
+  width: 100%; height: 240px; border-radius: 22px; margin-bottom: 22px; position: relative;
+  display: flex; align-items: center; justify-content: center; font-size: 100px;
+  box-shadow: inset 0 -8px 0 rgba(0,0,0,0.08), 0 10px 0 rgba(0,0,0,0.08);
+}
+.scene-art .emoji-main { animation: floaty 2.2s ease-in-out infinite; filter: drop-shadow(0 8px 6px rgba(0,0,0,0.2)); }
+.sparkle { position: absolute; font-size: 22px; animation: twinkle 1.8s ease-in-out infinite; }
+.sparkle.s1 { top: 12%; left: 10%; animation-delay: 0s; }
+.sparkle.s2 { top: 20%; right: 12%; animation-delay: 0.5s; }
+.sparkle.s3 { bottom: 15%; left: 18%; animation-delay: 1s; }
+.sparkle.s4 { bottom: 12%; right: 20%; animation-delay: 1.5s; }
+@keyframes twinkle { 0%,100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.3); } }
+
+.scene-text {
+  font-size: 21px; line-height: 1.7; color: #333; margin: 20px 0; min-height: 70px;
+  font-weight: 600; text-align: center;
+  animation: fadeUp 0.5s ease-out 0.1s both;
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+.choices { display: grid; gap: 16px; margin-top: 26px; }
+.choice-btn {
+  padding: 20px 22px; border: none; border-radius: 20px; cursor: pointer;
+  font-size: 18px; font-weight: 800; color: white; text-align: center;
+  background: linear-gradient(160deg, #ff8fc7, #ff1493);
+  box-shadow: 0 6px 0 #c2006f, 0 8px 16px rgba(0,0,0,0.15);
+  transition: transform 0.1s, box-shadow 0.1s;
+  animation: fadeUp 0.5s ease-out 0.25s both, gentlePulse 1.6s ease-in-out infinite 1s;
+}
+.choice-btn:nth-child(2) { background: linear-gradient(160deg, #8fd6ff, #219ebc); box-shadow: 0 6px 0 #146a80, 0 8px 16px rgba(0,0,0,0.15); }
+.choice-btn:active { transform: translateY(6px); box-shadow: 0 0 0 #c2006f, 0 2px 6px rgba(0,0,0,0.1); animation: none; }
+@keyframes gentlePulse { 0%,100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.035); filter: brightness(1.12); } }
+
+.emoji-main { cursor: pointer; }
+@keyframes emojiPop {
+  0% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(1.35) rotate(-12deg); }
+  60% { transform: scale(0.92) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes burstFly {
+  0% { opacity: 1; transform: translate(0,0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.4); }
+}
+
+.progress-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 18px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; background: #f0e0e8; }
+.dot.done { background: #ff69b4; transform: scale(1.2); }
+
+.top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.top-bar h2 { font-size: 20px; color: #ff1493; }
+.back-link {
+  color: #219ebc; font-size: 14px; cursor: pointer; font-weight: 700;
+  background: #e6f7ff; padding: 6px 14px; border-radius: 12px;
+}
+
+/* SETTINGS */
+.header-row { display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 4px; }
+.settings-btn {
+  position: absolute; right: 0; top: 0; width: 44px; height: 44px; border-radius: 50%;
+  background: white; border: none; font-size: 20px; cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.1), 0 6px 12px rgba(0,0,0,0.08);
+}
+.settings-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.1); }
+
+.settings-panel {
+  display: none; background: white; border-radius: 20px; padding: 22px;
+  margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  animation: fadeUp 0.3s ease-out both;
+}
+.settings-panel.open { display: block; }
+.settings-panel h3 { color: #333; font-size: 16px; margin-bottom: 4px; }
+.settings-panel .desc { color: #888; font-size: 13px; margin-bottom: 16px; }
+.settings-row { display: flex; justify-content: space-between; align-items: center; }
+.settings-row span { font-weight: 700; color: #333; font-size: 15px; }
+
+.toggle-switch { position: relative; width: 56px; height: 30px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer; inset: 0; background: #ddd; border-radius: 30px; transition: 0.25s;
+}
+.toggle-slider:before {
+  content: ""; position: absolute; height: 22px; width: 22px; left: 4px; bottom: 4px;
+  background: white; border-radius: 50%; transition: 0.25s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.toggle-switch input:checked + .toggle-slider { background: #38b000; }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(26px); }
+
+.unsupported-note { font-size: 12px; color: #c0392b; margin-top: 10px; }
+
+.replay-btn {
+  display: block; margin: 0 auto 10px; background: #fff0f6; color: #ff1493;
+  border: 2px solid #ffd6e8; padding: 8px 18px; border-radius: 14px; font-size: 13px;
+  font-weight: 700; cursor: pointer;
+}
+
+.parent-link {
+  display: block; text-align: center; margin: 30px 0 0; font-size: 11px;
+  color: #c9c2d0; text-decoration: underline; cursor: pointer;
+}
+
+.gate-question {
+  font-size: 26px; font-weight: 800; text-align: center; color: #333; margin: 6px 0 16px;
+}
+.gate-input {
+  width: 100%; padding: 14px; border-radius: 14px; border: 2px solid #eee;
+  font-size: 18px; text-align: center; margin-bottom: 12px; font-weight: 700;
+}
+.gate-error {
+  color: #c0392b; font-size: 13px; text-align: center; margin-bottom: 10px; display: none;
+}
+.gate-cancel {
+  display: block; margin: 14px auto 0; background: none; border: none;
+  color: #999; font-size: 13px; text-decoration: underline; cursor: pointer;
+}
+.settings-close {
+  display: block; margin: 16px auto 0; background: #f0f0f0; color: #666;
+  border: none; padding: 10px 20px; border-radius: 14px; font-size: 13px;
+  font-weight: 700; cursor: pointer;
+}
+
+/* FUN ENHANCEMENTS */
+.star-counter {
+  position: absolute; top: 14px; left: 14px; background: #fff; border-radius: 20px;
+  padding: 6px 12px; font-weight: 800; font-size: 13px; color: #ff8c00;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.1); z-index: 5;
+}
+.mascot {
+  position: absolute; bottom: 10px; right: 14px; font-size: 34px;
+  animation: floaty 3s ease-in-out infinite; z-index: 5; cursor: default;
+}
+.mascot.happy { animation: mascotBounce 0.6s ease; }
+@keyframes mascotBounce {
+  0% { transform: scale(1) rotate(0deg); }
+  40% { transform: scale(1.5) rotate(15deg); }
+  70% { transform: scale(1.2) rotate(-10deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes sceneSlideIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.emoji-invite { animation: inviteWiggle 0.8s ease-in-out; }
+@keyframes inviteWiggle {
+  0%,100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-8deg) scale(1.05); }
+  50% { transform: rotate(8deg) scale(1.05); }
+  75% { transform: rotate(-4deg) scale(1.02); }
+}
+.confetti-piece {
+  position: absolute; width: 10px; height: 10px; top: -10px; pointer-events: none;
+  animation: confettiFall 1.4s ease-in forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(320px) rotate(400deg); opacity: 0; }
+}/* LEVEL 1 EXTRA-CUTE MODE */
+.game-card.level1-mode {
+  border: 6px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(90deg, #ff9ecb, #ffd166, #a0e7e5, #b8a9ff, #ff9ecb);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 300% 100%;
+  animation: rainbowBorder 6s linear infinite;
+}
+@keyframes rainbowBorder {
+  0% { background-position: 0 0, 0% 0; }
+  100% { background-position: 0 0, 300% 0; }
+}
+.level1-mode .scene-art .emoji-main {
+  font-size: 1.15em;
+  animation: floatyBig 1.8s ease-in-out infinite;
+}
+@keyframes floatyBig {
+  0%,100% { transform: translateY(0) scale(1) rotate(-4deg); }
+  50% { transform: translateY(-16px) scale(1.08) rotate(4deg); }
+}
+.level1-mode .choice-btn {
+  font-size: 20px;
+  padding: 22px 24px;
+  border-radius: 26px;
+  animation: fadeUp 0.5s ease-out 0.25s both, bouncyPulse 1.2s ease-in-out infinite 1s;
+}
+@keyframes bouncyPulse {
+  0%,100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.05) rotate(-1deg); }
+}
+.bubble {
+  position: absolute; bottom: -20px; border-radius: 50%;
+  background: rgba(255,255,255,0.55); pointer-events: none;
+  animation: bubbleUp linear forwards;
+}
+@keyframes bubbleUp {
+  0% { transform: translateY(0) translateX(0) scale(0.6); opacity: 0.9; }
+  100% { transform: translateY(-260px) translateX(var(--bx, 20px)) scale(1.1); opacity: 0; }
+}
+.mini-burst {
+  position: absolute; font-size: 20px; pointer-events: none;
+  animation: burstFly 0.7s ease-out forwards;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-row">
+    <h1>✨ Story Adventure ✨</h1>
+  </div>
+  <p class="subtitle">Pick a story below and click through the adventure!</p>
+
+  <div class="settings-panel" id="parentGateScreen">
+    <h3>👪 Parent Access</h3>
+    <p class="desc">Please solve this to open parent settings:</p>
+    <div class="gate-question" id="gateQuestion"></div>
+    <input type="number" class="gate-input" id="gateInput" placeholder="Your answer">
+    <p class="gate-error" id="gateError">That's not quite right — try again!</p>
+    <button class="choice-btn" style="animation:none;" onclick="checkGateAnswer()">Unlock</button>
+    <button class="gate-cancel" onclick="closeParentGate()">Cancel</button>
+  </div>
+
+  <div class="settings-panel" id="settingsPanel">
+    <h3>👪 Parent Settings</h3>
+    <p class="desc">Turn on to have stories read aloud automatically using your device's built-in voice.</p>
+    <div class="settings-row">
+      <span>🔊 Read stories aloud</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="audioToggle" onchange="setAudio(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <p class="unsupported-note" id="unsupportedNote" style="display:none;">This device/browser doesn't support built-in speech, so this feature isn't available here.</p>
+
+    <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:10px; margin-top:18px;">
+      <span>📚 Child's Reading Level</span>
+      <select id="levelSelect" onchange="setChildLevel(this.value)" style="width:100%;padding:12px;border-radius:12px;border:2px solid #eee;font-size:14px;font-weight:700;">
+        <option value="all">All levels (let child choose)</option>
+        <option value="1">Level 1 — My First Stories</option>
+        <option value="2">Level 2 — I Can Start Reading</option>
+        <option value="3">Level 3 — I Can Read More</option>
+        <option value="4">Level 4 — I Can Read a Story</option>
+      </select>
+    </div>
+
+    <button class="settings-close" onclick="closeSettings()">Done</button>
+  </div>
+
+  <!-- LIBRARY VIEW -->
+  <div id="libraryView">
+    <div id="categoryView">
+      <div class="story-grid" id="categoryCards"></div>
+    </div>
+    <div id="categoryStoriesView" style="display:none;">
+      <div class="top-bar">
+        <h2 id="categoryTitle"></h2>
+        <span class="back-link" id="categoriesBackLink" onclick="showCategories()">← Categories</span>
+      </div>
+      <div id="storiesList"></div>
+    </div>
+  </div>
+
+  <!-- GAME VIEW -->
+  <div id="gameCard" class="game-card">
+    <div class="star-counter" id="starCounter">⭐ 0</div>
+    <div class="mascot" id="mascot">⭐</div>
+    <div class="top-bar">
+      <h2 id="gameTitle"></h2>
+      <span class="back-link" onclick="backToLibrary()">← Back</span>
+    </div>
+    <div class="progress-dots" id="progressDots"></div>
+    <div class="scene-art" id="sceneArt">
+      <span class="sparkle s1">✨</span><span class="sparkle s2">⭐</span>
+      <span class="sparkle s3">💫</span><span class="sparkle s4">✨</span>
+      <span class="emoji-main" id="sceneEmoji" onclick="popEmoji()">📖</span>
+    </div>
+    <div class="scene-text" id="sceneText"></div>
+    <button class="replay-btn" id="replayBtn" onclick="speakCurrentScene()" style="display:none;">🔊 Read this again</button>
+    <div class="choices" id="choices"></div>
+  </div>
+
+  <span class="parent-link" onclick="openParentGate()">For Parents</span>
+</div>
+<script>
+const STORIES = [
+  {
+    id: "chloe-and-the-wolf", title: "Chloe and the Wolf", card: "card-c1", cardIcon: "🐺", bg: ["#d4f7d4", "#fff4c2"], level: 3, navMode: "level",
+    scenes: [
+      { id: 0, text: "Chloe watched fluffy sheep on the hill every single day. Baa-oring! Today, she felt like stirring up some silly fun.", emoji: "🐑", colors: ["#ffeb3b","#ffc107"],
+        choices: [{ text: "Shout \"Wolf! Wolf!\" as a joke", nextScene: 1 }, { text: "Keep watching the sheep quietly", nextScene: 2 }] },
+      { id: 1, text: "\"WOLF! WOLF!\" Chloe hollered. Villagers came zooming, huffing and puffing — but no wolf, just a giggling Chloe. Oops!", emoji: "😟", colors: ["#f6d365","#fda085"],
+        choices: [{ text: "Say sorry and promise not to do it again", nextScene: 3 }, { text: "Giggle and think about doing it again another day", nextScene: 4 }] },
+      { id: 2, text: "Chloe watched every wiggly, wooly sheep all day long. By evening, every single one was safe and snug — hooray!", emoji: "🌟", colors: ["#84fab0","#8fd3f4"], choices: [] },
+      { id: 3, text: "\"I'm really, truly sorry,\" said Chloe. \"No more silly wolf-tricks!\" The villagers smiled, gave her a big hug, and forgave her.", emoji: "🤝", colors: ["#a8edea","#fed6e3"], choices: [] },
+      { id: 4, text: "A few days later — \"WOLF!\" she shouted again, just for giggles. Still no wolf! This time, nobody even looked up.", emoji: "🙄", colors: ["#fbc2eb","#a6c1ee"],
+        choices: [{ text: "See what happens next", nextScene: 5 }, { text: "Feel a little bit sneaky", nextScene: 5 }] },
+      { id: 5, text: "Then one day, a REAL wolf popped out of the bushes! Chloe yelled — but nobody came. So she bonk-bonk-bonked her stick bravely, and the wolf zoomed away. She never fibbed about wolves again!", emoji: "🐺", colors: ["#d4fc79","#96e6a1"], choices: [] }
+    ]
+  },
+  {
+    id: "sleepy-star-countdown", title: "Chloe's Sleepy Star Countdown", card: "card-c2", cardIcon: "🌙", bg: ["#2c3e78", "#5a6bb5"], level: 2, navMode: "level",
+    scenes: [
+      { id: 0, text: "Chloe snuggled into her cozy bed and peeked out the window. Outside, tiny stars twinkled and blinked, like they were winking hello!", emoji: "🌙", colors: ["#a8edea","#fed6e3"],
+        choices: [{ text: "Count the twinkling stars", nextScene: 1 }, { text: "Listen to the quiet night", nextScene: 2 }] },
+      { id: 1, text: "One sleepy star... two sleepy stars... three! Each little star winked as Chloe's eyes grew heavier and heavier — until, pop, they closed.", emoji: "⭐", colors: ["#84fab0","#8fd3f4"], choices: [] },
+      { id: 2, text: "Chloe listened closely. The wind hummed a giggly little lullaby, and even the trees seemed to whisper \"nighty-night,\" just for her.", emoji: "🌬️", colors: ["#fbc2eb","#a6c1ee"], choices: [] }
+    ]
+  },
+  {
+    id: "silly-bedtime-bear", title: "The Very Silly Bedtime Bear", card: "card-c3", cardIcon: "🧸", bg: ["#ffecd2", "#fcb69f"], level: 2, navMode: "level",
+    scenes: [
+      { id: 0, text: "Bear was getting ready for bed, but oh boy — sleepy Bear was extra silly tonight! Wobble, wobble, flop!", emoji: "🧸", colors: ["#f6d365","#fda085"],
+        choices: [{ text: "Bear puts on pajamas... backwards!", nextScene: 1 }, { text: "Bear tries to brush teeth with a hairbrush!", nextScene: 2 }] },
+      { id: 1, text: "\"Tee-hee, silly Bear!\" giggled Chloe. Bear spun the pajamas round and round, then hop-hop-hopped happily toward the bed.", emoji: "😄", colors: ["#ffeb3b","#ffc107"], choices: [{ text: "Snuggle up with Teddy", nextScene: 3 }, { text: "Giggle along", nextScene: 3 }] },
+      { id: 2, text: "\"That's a hairbrush, silly!\" laughed Chloe. Bear found the REAL toothbrush, flashed a big sparkly grin, and bounced off to bed.", emoji: "🪥", colors: ["#d4fc79","#96e6a1"], choices: [{ text: "Snuggle up with Teddy", nextScene: 3 }, { text: "Clap for Bear", nextScene: 3 }] },
+      { id: 3, text: "Bear gave one ENORMOUS yawn — aaaah-wooo! — curled up under the blanket with Teddy, and fell fast asleep with the silliest, happiest smile.", emoji: "😴", colors: ["#a8edea","#fed6e3"], choices: [] }
+    ]
+  },
+  {
+    id: "whispering-forest", title: "Chloe and the Whispering Forest", card: "card-c4", cardIcon: "🌲", bg: ["#1e5245", "#4e9f7d"], level: 2, navMode: "level",
+    scenes: [
+      { id: 0, text: "As Chloe closed her eyes, she floated into a dream — a glowing forest full of giggling fireflies, dancing and twirling in the dark!", emoji: "🌲", colors: ["#84fab0","#8fd3f4"],
+        choices: [{ text: "Follow the friendly fireflies", nextScene: 1 }, { text: "Listen to the whispering trees", nextScene: 2 }] },
+      { id: 1, text: "The giggly fireflies led Chloe to a soft mossy clearing. They twirled slower... and slower... until everything felt calm, cozy, and safe.", emoji: "✨", colors: ["#fbc2eb","#a6c1ee"], choices: [{ text: "Wave goodnight to the fireflies", nextScene: 3 }, { text: "Blow a sleepy kiss", nextScene: 3 }] },
+      { id: 2, text: "The trees hummed a silly, sleepy tune, and a soft breeze rocked Chloe back and forth — like the world's coziest, wobbliest hammock!", emoji: "🍃", colors: ["#a8edea","#fed6e3"], choices: [{ text: "Whisper goodnight back", nextScene: 3 }, { text: "Snuggle into the hammock", nextScene: 3 }] },
+      { id: 3, text: "Slowly, the forest melted away like sparkly mist, and — poof! — Chloe was back in her own cozy bed, warm and ready for sleep.", emoji: "🛏️", colors: ["#f6d365","#fda085"], choices: [] }
+    ]
+  },
+  {
+    id: "no-not-yet-ducky", title: "No, Not Yet, Ducky!", card: "card-c5", cardIcon: "🦆", bg: ["#fceabb", "#f8b500"], level: 2, navMode: "level",
+    scenes: [
+      { id: 0, text: "\"Just ONE more glass of water!\" quacked Ducky, stalling bedtime with a sneaky little grin.", emoji: "🦆", colors: ["#ffeb3b","#ffc107"],
+        choices: [{ text: "Say \"No, Ducky, time for bed!\"", nextScene: 1 }, { text: "Let Ducky have one more glass of water", nextScene: 2 }] },
+      { id: 1, text: "Ducky let out a big quack-giggle and flopped happily into bed. Wow — that was easy-peasy!", emoji: "😊", colors: ["#d4fc79","#96e6a1"], choices: [] },
+      { id: 2, text: "Ducky slurped up the water — glug, glug, glug! — then batted her eyes. \"Just ONE more story, pleeease?\"", emoji: "📖", colors: ["#f6d365","#fda085"],
+        choices: [{ text: "Say \"No, Ducky, time to sleep!\"", nextScene: 3 }, { text: "Read Ducky one more story", nextScene: 4 }] },
+      { id: 3, text: "Ducky gave a HUGE yawn — out of sneaky excuses at last! — and curled up sleepily in bed.", emoji: "🥱", colors: ["#84fab0","#8fd3f4"], choices: [] },
+      { id: 4, text: "Halfway through the story, Ducky's eyes went droopy... droopier... droopiest...", emoji: "📚", colors: ["#fbc2eb","#a6c1ee"], choices: [{ text: "Whisper \"Goodnight, Ducky\"", nextScene: 5 }, { text: "Tuck the blanket in", nextScene: 5 }] },
+      { id: 5, text: "Ducky fell fast asleep right in the middle of the story, book still open, snoring the sweetest little quack-snores. Quack... quack... zzzzz.", emoji: "💤", colors: ["#a8edea","#fed6e3"], choices: [] }
+    ]
+  },
+  {
+    id: "chloe-and-the-rainbow-dragon", title: "Chloe and the Rainbow Dragon", card: "card-c6", cardIcon: "🐉", bg: ["#a18cd1", "#fbc2eb"], level: 3, navMode: "level",
+    scenes: [
+      { id: 0, text: "One sunny morning — surprise! — Chloe found a tiny dragon snoozing in the garden, its scales sparkling every rainbow color!", emoji: "🌈", colors: ["#f6d365","#fda085"],
+        choices: [{ text: "Say hello gently", nextScene: 1 }, { text: "Run to get Mom first", nextScene: 2 }] },
+      { id: 1, text: "The dragon blinked its twinkly eyes and gave a happy little \"chirrup!\" It nuzzled Chloe's hand like a wiggly puppy.", emoji: "🐉", colors: ["#84fab0","#8fd3f4"],
+        choices: [{ text: "Fly over the rainbow clouds together", nextScene: 3 }, { text: "Stay and play in the garden", nextScene: 4 }] },
+      { id: 2, text: "Mom peeked over — and the dragon wasn't shy at all! It plopped a shiny rainbow scale right into Chloe's hand. Ta-da, a gift!", emoji: "✨", colors: ["#a8edea","#fed6e3"], choices: [] },
+      { id: 3, text: "Up, up, up they zoomed! They swooshed through big fluffy rainbow clouds, giggling the whole way home.", emoji: "☁️", colors: ["#fbc2eb","#a6c1ee"], choices: [] },
+      { id: 4, text: "Pop! Pop! Pop! Every flower the dragon passed burst into rainbow colors. Chloe giggled all afternoon in her sparkly new garden.", emoji: "🌸", colors: ["#d4fc79","#96e6a1"], choices: [] }
+    ]
+  },
+  {
+    id: "dinosaur-in-my-bed", title: "There's a Dinosaur in My Bed!", card: "card-c3", cardIcon: "🦖", bg: ["#a8e6cf", "#56ab2f"], level: 3, navMode: "level",
+    scenes: [
+      {
+        id: 0,
+        text: "Chloe yanked back her blanket to hop into bed — and, gasp, found a tiny dinosaur snoozing right smack in the middle!",
+        emoji: "🛏️",
+        colors: ["#a8e6cf", "#dcedc1"],
+        choices: [
+          { text: "Say hello gently", nextScene: 1 },
+          { text: "Tickle its tummy", nextScene: 2 }
+        ]
+      },
+      {
+        id: 1,
+        text: "The little dino blinked its sleepy eyes, gave a squeaky little chirp, and nuzzled Chloe's hand like a snoozy puppy.",
+        emoji: "🦕",
+        colors: ["#88d8b0", "#c8e6c9"],
+        choices: [
+          { text: "Invite it to a pajama party", nextScene: 3 },
+          { text: "Tuck it in for a bedtime story", nextScene: 4 }
+        ]
+      },
+      {
+        id: 2,
+        text: "Turns out dinosaurs are SUPER duper ticklish! It squealed, wiggled, and boing-boing-bounced all over the bed!",
+        emoji: "😆",
+        colors: ["#ffe082", "#ffcc80"],
+        choices: [
+          { text: "Invite it to a pajama party", nextScene: 3 },
+          { text: "Tuck it in for a bedtime story", nextScene: 4 }
+        ]
+      },
+      {
+        id: 3,
+        text: "They threw the silliest pajama party ever — tiny dino pajamas and all! They giggled themselves right into sleepyland.",
+        emoji: "🎉",
+        colors: ["#ffafcc", "#bde0fe"],
+        choices: []
+      },
+      {
+        id: 4,
+        text: "The dino listened to every single word of the story, gave one teeny yawn, and konked out fast asleep beside Chloe.",
+        emoji: "😴",
+        colors: ["#a8edea", "#fed6e3"],
+        choices: []
+      }
+    ]
+  },
+  {
+    id: "giraffe-cant-fit-through-door", title: "Giraffe Can't Fit Through the Door!", card: "card-c6", cardIcon: "🦒", bg: ["#ffd166", "#06d6a0"], level: 3, navMode: "level",
+    scenes: [
+      {
+        id: 0,
+        text: "A giraffe came to visit — but oh no, its super-duper long neck was WAY too tall for the front door!",
+        emoji: "🦒",
+        colors: ["#ffe066", "#ffb703"],
+        choices: [
+          { text: "Ask the giraffe to bend down low", nextScene: 1 },
+          { text: "Suggest the upstairs window instead", nextScene: 2 }
+        ]
+      },
+      {
+        id: 1,
+        text: "The giraffe bent its neck down super low and squeeeezed sideways through the door, giggling the whole wobbly way!",
+        emoji: "😄",
+        colors: ["#ffd6a5", "#ffb4a2"],
+        choices: [{ text: "Celebrate with a giant snack plate", nextScene: 3 }, { text: "Cheer for the giraffe", nextScene: 3 }]
+      },
+      {
+        id: 2,
+        text: "Instead, the giraffe poked its silly head through the upstairs window — stretch, stretch, stretch! — all the way to the living room!",
+        emoji: "🪟",
+        colors: ["#a0e7e5", "#b4f8c8"],
+        choices: [{ text: "Give the giraffe a window tour", nextScene: 4 }, { text: "Wave up at the window", nextScene: 4 }]
+      },
+      {
+        id: 3,
+        text: "They munched a giant plate of crunchy leaves and cookies together — yum! — giggling about that tricky door all afternoon long.",
+        emoji: "🍪",
+        colors: ["#fbc4ab", "#ffe5d9"],
+        choices: []
+      },
+      {
+        id: 4,
+        text: "The giraffe loved peeking into every room, waving goofily at surprised neighbors below, and promised to visit again — with a much taller door next time!",
+        emoji: "👋",
+        colors: ["#caffbf", "#9bf6ff"],
+        choices: []
+      }
+    ]
+  },
+  {
+    id: "milo-cant-find-hat", title: "Milo the Cat Can't Find His Hat!", card: "card-c1", cardIcon: "🎩", bg: ["#ffe066", "#ff8fa3"], level: 3, navMode: "level",
+    scenes: [
+      {
+        id: 0,
+        text: "Milo the cat searched high and low — his hat had vanished! Where oh where could it be?",
+        emoji: "🐱",
+        colors: ["#ffe066", "#ffb703"],
+        choices: [
+          { text: "Look under the bed", nextScene: 1 },
+          { text: "Look in the kitchen", nextScene: 2 }
+        ]
+      },
+      {
+        id: 1,
+        text: "Under the bed? Nope — just fluffy, sneezy dust bunnies! Achoo!",
+        emoji: "🛏️",
+        colors: ["#fbc4ab", "#ffe5d9"],
+        choices: [{ text: "Check the garden next", nextScene: 3 }, { text: "Sneeze along!", nextScene: 3 }]
+      },
+      {
+        id: 2,
+        text: "In the kitchen? Nope — just a teeny, squeaky mouse hole!",
+        emoji: "🧀",
+        colors: ["#ffd6a5", "#fdffb6"],
+        choices: [{ text: "Check the garden next", nextScene: 3 }, { text: "Peek in the mouse hole", nextScene: 3 }]
+      },
+      {
+        id: 3,
+        text: "Out in the garden, Milo bumped into a friendly, giggly ladybug.",
+        emoji: "🐞",
+        colors: ["#caffbf", "#9bf6ff"],
+        choices: [{ text: "Ask the ladybug for help", nextScene: 4 }, { text: "Say hi to the ladybug", nextScene: 4 }]
+      },
+      {
+        id: 4,
+        text: "\"Pssst — try looking UP!\" giggled the ladybug, pointing with a tiny polka-dot wing.",
+        emoji: "☝️",
+        colors: ["#a0c4ff", "#bdb2ff"],
+        choices: [{ text: "Look up", nextScene: 5 }, { text: "Thank the ladybug", nextScene: 5 }]
+      },
+      {
+        id: 5,
+        text: "Milo looked up... and — surprise! — his hat was sitting right on his very own head the whole time!",
+        emoji: "😲",
+        colors: ["#ffc6ff", "#fffffc"],
+        choices: [{ text: "Laugh and wear it proudly", nextScene: 6 }, { text: "Gasp in surprise!", nextScene: 6 }]
+      },
+      {
+        id: 6,
+        text: "Milo cracked up laughing and strutted around like a superstar, wearing his silly, forgetful hat.",
+        emoji: "🎩",
+        colors: ["#ffd6a5", "#ff8fa3"],
+        choices: []
+      }
+    ]
+  },
+  {
+    id: "pig-in-a-wig", title: "Pig in a Wig!", card: "card-c2", cardIcon: "🐷", bg: ["#ffd6ec", "#c9f2c7"], level: 2, navMode: "level",
+    scenes: [
+      { id: 0, text: "Pig plopped on a wig! Wobble, wobble!", emoji: "🐷", colors: ["#ffd6ec", "#ffe5f1"],
+        choices: [{ text: "Pink wig!", nextScene: 1 }, { text: "Blue wig!", nextScene: 2 }] },
+      { id: 1, text: "Pink wig! Oh, silly Pig!", emoji: "🩷", colors: ["#ffc2e2", "#ffe5f1"],
+        choices: [{ text: "Pig spins around!", nextScene: 3 }, { text: "Clap for Pig!", nextScene: 3 }] },
+      { id: 2, text: "Blue wig! Oh, silly Pig!", emoji: "🔵", colors: ["#bde0fe", "#e0f7ff"],
+        choices: [{ text: "Pig spins around!", nextScene: 3 }, { text: "Clap for Pig!", nextScene: 3 }] },
+      { id: 3, text: "Pig spins and spins — whee, whee, whee!", emoji: "🌀", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "Wig falls off!", nextScene: 4 }, { text: "Spin along too!", nextScene: 4 }] },
+      { id: 4, text: "Whoopsie! Wig flies off — boing!", emoji: "😮", colors: ["#ffd6a5", "#fff1d6"],
+        choices: [{ text: "Pig laughs!", nextScene: 5 }, { text: "Gasp and giggle!", nextScene: 5 }] },
+      { id: 5, text: "Pig giggles and pops the wig back on! Ta-da!", emoji: "😄", colors: ["#ffd6ec", "#c9f2c7"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "where-is-my-sock", title: "Where Is My Sock?", card: "card-c4", cardIcon: "🧦", bg: ["#fff1b8", "#ffd6a5"], level: 2, navMode: "level",
+    scenes: [
+      { id: 0, text: "Uh-oh! One sock is missing! Where oh where could it be?", emoji: "🧦", colors: ["#fff1b8", "#ffe9a8"],
+        choices: [{ text: "Look under the bed", nextScene: 1 }, { text: "Look in the box", nextScene: 2 }] },
+      { id: 1, text: "Not under the bed — just a bouncy toy! Boing!", emoji: "🧸", colors: ["#ffd6a5", "#ffe5d9"],
+        choices: [{ text: "Look by the door", nextScene: 3 }, { text: "Bounce the toy!", nextScene: 3 }] },
+      { id: 2, text: "Not in the box — just a wiggly book! Flip, flop!", emoji: "📕", colors: ["#ffadad", "#ffd6d6"],
+        choices: [{ text: "Look by the door", nextScene: 3 }, { text: "Peek at the book!", nextScene: 3 }] },
+      { id: 3, text: "Ooh, look by the door!", emoji: "🚪", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "There it is!", nextScene: 4 }, { text: "Peek behind it!", nextScene: 4 }] },
+      { id: 4, text: "Ta-da! Sock found, right by the door!", emoji: "🎉", colors: ["#9bf6ff", "#caffbf"],
+        choices: [{ text: "Put both socks on!", nextScene: 5 }, { text: "Do a happy dance!", nextScene: 5 }] },
+      { id: 5, text: "Yay, yay, yay! Two socks, all snug — all done!", emoji: "🥳", colors: ["#fff1b8", "#ffd6a5"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "bunny-lost-bounce", title: "The Bunny Who Lost Her Bounce", card: "card-c3", cardIcon: "🐰", bg: ["#d8f3dc", "#ffd6e8"], level: 4, navMode: "level",
+    scenes: [
+      { id: 0, text: "Bunny woke up, ready to hop — but only a wibbly-wobbly shuffle came out. Uh-oh, something was VERY wrong!", emoji: "🐰", colors: ["#d8f3dc", "#eaffea"],
+        choices: [{ text: "Ask wise Owl for advice", nextScene: 1 }, { text: "Ask chatty Squirrel for advice", nextScene: 2 }] },
+      { id: 1, text: "Owl blinked slowly, twice. \"Hmm... perhaps you forgot your wiggly morning stretches?\" Owl hooted, very wisely.", emoji: "🦉", colors: ["#e0c3fc", "#f3e8ff"],
+        choices: [{ text: "Try stretching first", nextScene: 3 }, { text: "Thank Owl for the tip", nextScene: 3 }] },
+      { id: 2, text: "Squirrel zoomed over, cheeks puffed. \"Ooh ooh, maybe you need more crunchy acorns for zoom-zoom energy!\" Squirrel chattered.", emoji: "🐿️", colors: ["#ffd6a5", "#fff1d6"],
+        choices: [{ text: "Eat some acorns first", nextScene: 4 }, { text: "Thank Squirrel for the tip", nextScene: 4 }] },
+      { id: 3, text: "Bunny stretched — creeeak! — and gave one tiny hop. Better, but still not her big, happy old bounce.", emoji: "🤸", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "Go ask Squirrel too", nextScene: 5 }, { text: "Try one more stretch", nextScene: 5 }] },
+      { id: 4, text: "Bunny munched crunchy acorns — nom nom nom — then hopped... just a wobbly wobble. Something was still missing!", emoji: "🌰", colors: ["#ffe066", "#fff6cc"],
+        choices: [{ text: "Go ask Owl too", nextScene: 5 }, { text: "Munch one more acorn", nextScene: 5 }] },
+      { id: 5, text: "Owl and Squirrel both scratched their fuzzy heads. \"Wait... have you checked your lucky hopping rock?\" they wondered together.", emoji: "🪨", colors: ["#bde0fe", "#e0f4ff"],
+        choices: [{ text: "Go check the hopping rock", nextScene: 6 }, { text: "Scratch head too", nextScene: 6 }] },
+      { id: 6, text: "At the rock — gasp! — Bunny's lucky bounce-berry was gone! Tiny muddy paw-prints trailed off into the bushes.", emoji: "🫐", colors: ["#a0c4ff", "#d6e6ff"],
+        choices: [{ text: "Follow the tiny footprints", nextScene: 7 }, { text: "Look closer at the prints", nextScene: 7 }] },
+      { id: 7, text: "The paw-prints led straight to a baby fox, munching the bounce-berry with purple, berry-stained, giggly cheeks!", emoji: "🦊", colors: ["#ffb703", "#ffe5b4"],
+        choices: [{ text: "Ask kindly for it back", nextScene: 8 }, { text: "Offer to play a game instead", nextScene: 9 }] },
+      { id: 8, text: "The fox shared the very last berry bite. Bunny bounced higher than EVER, boing-boing-boinging all the way home!", emoji: "✨", colors: ["#d8f3dc", "#ffd6e8"],
+        choices: [] },
+      { id: 9, text: "They played hopscotch together — hop, skip, jump! — and Bunny discovered her real bounce was a brand new best friend all along!", emoji: "🎉", colors: ["#ffd6ec", "#caffbf"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "mystery-missing-moon", title: "The Mystery of the Missing Moon", card: "card-c5", cardIcon: "🌙", bg: ["#22223b", "#4a4e69"], level: 4, navMode: "level",
+    scenes: [
+      { id: 0, text: "One spooky-quiet night, the forest animals looked up — and gasp, the moon was GONE! Only worried little stars twinkled.", emoji: "🌌", colors: ["#22223b", "#4a4e69"],
+        choices: [{ text: "Ask wise old Turtle", nextScene: 1 }, { text: "Ask chatty Firefly", nextScene: 2 }] },
+      { id: 1, text: "Turtle blinked... very... slowly. \"Clouds sometimes hide the moon,\" Turtle said — though the sky was oddly, perfectly clear.", emoji: "🐢", colors: ["#84a98c", "#cad2c5"],
+        choices: [{ text: "Check for clouds anyway", nextScene: 3 }, { text: "Thank Turtle kindly", nextScene: 3 }] },
+      { id: 2, text: "Firefly zoomed around in excited zig-zags. \"Ooh, maybe it rolled away!\" Firefly buzzed, zipping off toward the hill.", emoji: "🪲", colors: ["#ffe066", "#fff6cc"],
+        choices: [{ text: "Follow Firefly's light", nextScene: 3 }, { text: "Zoom along too", nextScene: 3 }] },
+      { id: 3, text: "Not one cloud in sight — just clear sky, and one super shiny clue: sparkly silver dust on a leaf!", emoji: "✨", colors: ["#a0c4ff", "#d6e6ff"],
+        choices: [{ text: "Follow the silver trail", nextScene: 4 }, { text: "Look closer at the dust", nextScene: 4 }] },
+      { id: 4, text: "The glittery trail wound deep into the forest, past snoozing owls, right up to a hidden, glowing cave.", emoji: "🕳️", colors: ["#6d597a", "#b8a9c9"],
+        choices: [{ text: "Peek inside the cave", nextScene: 5 }, { text: "Tiptoe closer", nextScene: 5 }] },
+      { id: 5, text: "Inside, a baby dragon was curled snugly around something round and glowing, snoring little puffs of smoke.", emoji: "🐉", colors: ["#588157", "#a3b18a"],
+        choices: [{ text: "Wake the dragon gently", nextScene: 6 }, { text: "Whisper hello softly", nextScene: 6 }] },
+      { id: 6, text: "The dragon woke with a jolt. \"I— I just wanted to keep it safe and toasty warm!\" it squeaked sadly.", emoji: "😢", colors: ["#e5989b", "#ffcdb2"],
+        choices: [{ text: "Explain why the moon is needed", nextScene: 7 }, { text: "Give the dragon a hug", nextScene: 7 }] },
+      { id: 7, text: "\"But the WHOLE forest needs moonlight to see at night,\" the animals explained gently. The dragon's cheeks turned pink.", emoji: "💭", colors: ["#bde0fe", "#e0f4ff"],
+        choices: [{ text: "Help carry the moon home", nextScene: 8 }, { text: "Invite the dragon to join the forest", nextScene: 9 }] },
+      { id: 8, text: "Together they huffed and puffed, rolling the moon back up — and up it rose, bright and beautiful once more!", emoji: "🌕", colors: ["#22223b", "#4a4e69"],
+        choices: [] },
+      { id: 9, text: "The dragon gave the moon back AND became the forest's newest best friend — glowing like a cozy little night-lantern.", emoji: "🏮", colors: ["#f2cc8f", "#f4e3b2"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "squeaky-cheese-mystery", title: "Squeaky and the Great Cheese Mystery", card: "card-c2", cardIcon: "🐭", bg: ["#fff3b0", "#ffd6a5"], level: 4, navMode: "level",
+    scenes: [
+      { id: 0, text: "Squeaky the mouse woke up — and gasped! The pantry's GIANT cheese wheel was gone, gone, gone. Just crumbs left!", emoji: "🧀", colors: ["#fff3b0", "#fff9db"],
+        choices: [{ text: "Look for clues on the floor", nextScene: 1 }, { text: "Ask the other mice", nextScene: 2 }] },
+      { id: 1, text: "Tiny cheesy paw-prints trailed away from the pantry, sprinkled with crumbs like a trail of yummy clues.", emoji: "🐾", colors: ["#ffd6a5", "#ffe5d9"],
+        choices: [{ text: "Follow the paw prints", nextScene: 3 }, { text: "Sniff the crumbs", nextScene: 3 }] },
+      { id: 2, text: "The other mice squeaked all at once. \"We saw something BIG and fluffy near the pantry last night!\"", emoji: "😮", colors: ["#e0aaff", "#f3d9ff"],
+        choices: [{ text: "Search near that fluffy clue", nextScene: 3 }, { text: "Ask what it looked like", nextScene: 3 }] },
+      { id: 3, text: "The trail zig-zagged past flower pots, ducked under the old porch, and led to a cozy little burrow.", emoji: "🏡", colors: ["#a0e7a0", "#dcf5dc"],
+        choices: [{ text: "Peek into the burrow", nextScene: 4 }, { text: "Knock gently first", nextScene: 4 }] },
+      { id: 4, text: "Inside sat a very round, very full hedgehog, surrounded by cheese rinds — and a very guilty face.", emoji: "🦔", colors: ["#f4a261", "#f9c98d"],
+        choices: [{ text: "Ask the hedgehog directly", nextScene: 5 }, { text: "Point at the cheese rinds", nextScene: 5 }] },
+      { id: 5, text: "\"I was SOOO hungry, and it smelled AMAZING!\" the hedgehog blurted, cheeks blushing bright pink.", emoji: "😳", colors: ["#ffb4a2", "#ffe0d6"],
+        choices: [{ text: "Ask for cheese back", nextScene: 6 }, { text: "Suggest sharing snacks from now on", nextScene: 7 }] },
+      { id: 6, text: "The hedgehog said sorry a hundred times and helped bake a brand-new cheese wheel — even bigger than before!", emoji: "👩‍🍳", colors: ["#fff3b0", "#fff9db"],
+        choices: [{ text: "Celebrate together", nextScene: 8 }, { text: "Help stir the batter", nextScene: 8 }] },
+      { id: 7, text: "They pinky-promised to share snacks every single week, becoming the silliest, most unlikely best friends ever.", emoji: "🤝", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "Celebrate together", nextScene: 8 }, { text: "Pinky-promise too", nextScene: 8 }] },
+      { id: 8, text: "Squeaky and the hedgehog nibbled warm cheese together, giggling about the Great Cheese Mystery — solved at last!", emoji: "🎉", colors: ["#fff3b0", "#ffd6a5"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "mouse-finds-a-cheese", title: "Mouse Finds a Cheese", card: "card-c1", cardIcon: "🐭", bg: ["#fff3b0", "#ffe9a8"], level: 2, navMode: "level",
+    scenes: [
+      { id: 0, text: "Mouse spots a cheese! Sniff, sniff!", emoji: "🐭", colors: ["#fff3b0", "#fff9db"],
+        choices: [{ text: "Nibble a little bit", nextScene: 1 }, { text: "Take a giant bite!", nextScene: 2 }] },
+      { id: 1, text: "Nibble, nibble! Yum, yum!", emoji: "🧀", colors: ["#ffe066", "#fff6cc"],
+        choices: [{ text: "Squeak with joy!", nextScene: 3 }, { text: "Nibble some more!", nextScene: 3 }] },
+      { id: 2, text: "CHOMP! Huge bite! Mouse's cheeks puff up like balloons!", emoji: "😲", colors: ["#ffd6a5", "#fff1d6"],
+        choices: [{ text: "Squeak with joy!", nextScene: 3 }, { text: "Puff out cheeks!", nextScene: 3 }] },
+      { id: 3, text: "Squeak, squeak! Mouse squeaks happily, cheeks full and happy!", emoji: "🎉", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "Share with a friend!", nextScene: 4 }, { text: "Do a happy wiggle!", nextScene: 4 }] },
+      { id: 4, text: "Mouse shares the last crumb with a tiny friend. Yum, yum, yum!", emoji: "🥰", colors: ["#fff3b0", "#ffe9a8"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "who-woke-the-puppy", title: "Who Woke the Puppy?", card: "card-c4", cardIcon: "🐶", bg: ["#ffe5a8", "#caffbf"], level: 3, navMode: "level",
+    scenes: [
+      { id: 0, text: "Puppy woke up SUPER early, yawning and grumpy. Who woke him up so soon?", emoji: "🐶", colors: ["#ffe5a8", "#fff6dd"],
+        choices: [{ text: "Ask the rooster", nextScene: 1 }, { text: "Ask the cat", nextScene: 2 }] },
+      { id: 1, text: "\"Not me!\" crowed the rooster proudly. \"I was still snoozing too, cock-a-doodle-SNOOZE!\"", emoji: "🐓", colors: ["#ffd6a5", "#ffe5d9"],
+        choices: [{ text: "Ask the cat next", nextScene: 3 }, { text: "Say sorry to the rooster", nextScene: 3 }] },
+      { id: 2, text: "\"Not me!\" meowed the cat, stretching lazily in a sunbeam. \"I've been napping all morning!\"", emoji: "🐱", colors: ["#e0aaff", "#f3d9ff"],
+        choices: [{ text: "Ask the rooster next", nextScene: 3 }, { text: "Give the cat a pat", nextScene: 3 }] },
+      { id: 3, text: "They both pointed a paw and a wing at something buzzing loudly past Puppy's ear.", emoji: "👉", colors: ["#a0c4ff", "#d6e6ff"],
+        choices: [{ text: "Ask the buzzing bee", nextScene: 4 }, { text: "Follow the buzzing sound", nextScene: 4 }] },
+      { id: 4, text: "\"Oops, sorry!\" buzzed the bee, zooming in dizzy circles. \"I was just buzzing around looking for flowers!\"", emoji: "🐝", colors: ["#fff3b0", "#fff9db"],
+        choices: [{ text: "Forgive the bee kindly", nextScene: 5 }, { text: "Ask for a silly apology dance", nextScene: 6 }] },
+      { id: 5, text: "Puppy forgave the bee right away, and the two became the buzziest, waggiest of friends.", emoji: "🤝", colors: ["#caffbf", "#e4ffe0"],
+        choices: [] },
+      { id: 6, text: "The bee did a wiggly, wobbly apology dance, and Puppy laughed so hard he forgot he was ever sleepy!", emoji: "🎉", colors: ["#ffe5a8", "#caffbf"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "my-book-and-me", title: "My Book and Me", card: "card-c6", cardIcon: "📖", bg: ["#ffe5a8", "#a0c4ff"], level: 1, navMode: "level",
+    scenes: [
+      { id: 0, text: "I open my book today.", emoji: "📖", colors: ["#ffe5a8", "#fff6dd"],
+        choices: [{ text: "Turn the page!", nextScene: 1 }, { text: "So excited!", nextScene: 1 }] },
+      { id: 1, text: "I see a happy bear.", emoji: "🐻", colors: ["#e0aaff", "#f3d9ff"],
+        choices: [{ text: "Wave back!", nextScene: 2 }, { text: "Say hi!", nextScene: 2 }] },
+      { id: 2, text: "The bear waves back at me.", emoji: "👋", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "Turn the page!", nextScene: 3 }, { text: "Keep going!", nextScene: 3 }] },
+      { id: 3, text: "I turn the page so slow.", emoji: "📖", colors: ["#a0c4ff", "#d6e6ff"],
+        choices: [{ text: "Keep reading!", nextScene: 4 }, { text: "Almost done!", nextScene: 4 }] },
+      { id: 4, text: "Reading books makes me so happy!", emoji: "🥰", colors: ["#ffe5a8", "#a0c4ff"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "what-color-is-it", title: "What Color Is It?", card: "card-c3", cardIcon: "🍎", bg: ["#ffadad", "#fdffb6"], level: 1, navMode: "level",
+    scenes: [
+      { id: 0, text: "Look, a shiny red apple!", emoji: "🍎", colors: ["#ffadad", "#ffd6d6"],
+        choices: [{ text: "Yum!", nextScene: 1 }, { text: "So tasty!", nextScene: 1 }] },
+      { id: 1, text: "Here's a sunny yellow banana.", emoji: "🍌", colors: ["#fdffb6", "#fff9db"],
+        choices: [{ text: "Yum!", nextScene: 2 }, { text: "So tasty!", nextScene: 2 }] },
+      { id: 2, text: "Sweet purple grapes for you!", emoji: "🍇", colors: ["#e0aaff", "#f3d9ff"],
+        choices: [{ text: "Yum!", nextScene: 3 }, { text: "So tasty!", nextScene: 3 }] },
+      { id: 3, text: "So many yummy colors today!", emoji: "🎉", colors: ["#ffadad", "#fdffb6"],
+        choices: [{ text: "Great job!", nextScene: 4 }, { text: "Woo hoo!", nextScene: 4 }] },
+      { id: 4, text: "Great reading, well done you!", emoji: "🌟", colors: ["#fdffb6", "#ffe9a8"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "big-and-small", title: "Big and Small", card: "card-c5", cardIcon: "🐘", bg: ["#c8b6ff", "#caffbf"], level: 1, navMode: "level",
+    scenes: [
+      { id: 0, text: "Here comes a big elephant!", emoji: "🐘", colors: ["#c8b6ff", "#e0d6ff"],
+        choices: [{ text: "Wave hi!", nextScene: 1 }, { text: "So big!", nextScene: 1 }] },
+      { id: 1, text: "Wow, he is so big!", emoji: "🐘", colors: ["#c8b6ff", "#e0d6ff"],
+        choices: [{ text: "Say hello!", nextScene: 2 }, { text: "Wow!", nextScene: 2 }] },
+      { id: 2, text: "Here comes a tiny mouse.", emoji: "🐭", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "Wave hi!", nextScene: 3 }, { text: "So tiny!", nextScene: 3 }] },
+      { id: 3, text: "Aw, she is so small.", emoji: "🐭", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "Say hello!", nextScene: 4 }, { text: "Aw cute!", nextScene: 4 }] },
+      { id: 4, text: "Big and small, best friends!", emoji: "🤝", colors: ["#c8b6ff", "#caffbf"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "the-happy-sun", title: "The Happy Sun", card: "card-c4", cardIcon: "☀️", bg: ["#fff4b8", "#ffe066"], level: 1, navMode: "level",
+    scenes: [
+      { id: 0, text: "The sun wakes up bright.", emoji: "☀️", colors: ["#fff4b8", "#fff9db"],
+        choices: [{ text: "Stretch and yawn!", nextScene: 1 }, { text: "Say good morning!", nextScene: 1 }] },
+      { id: 1, text: "It smiles at the trees.", emoji: "🌳", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "Wave at the sun!", nextScene: 2 }, { text: "Smile back!", nextScene: 2 }] },
+      { id: 2, text: "Birds sing a happy song.", emoji: "🐦", colors: ["#a0c4ff", "#d6e6ff"],
+        choices: [{ text: "Sing along!", nextScene: 3 }, { text: "Listen closely!", nextScene: 3 }] },
+      { id: 3, text: "Flowers open to say hello.", emoji: "🌼", colors: ["#ffd6ec", "#ffe5f1"],
+        choices: [{ text: "Say hi back!", nextScene: 4 }, { text: "Sniff a flower!", nextScene: 4 }] },
+      { id: 4, text: "What a sunny, happy day!", emoji: "🌈", colors: ["#fff4b8", "#caffbf"],
+        choices: [] }
+    ]
+  },
+  {
+    id: "my-snuggly-blanket", title: "My Snuggly Blanket", card: "card-c6", cardIcon: "🛏️", bg: ["#ffd6a5", "#ffe5d9"], level: 1, navMode: "level",
+    scenes: [
+      { id: 0, text: "I have a soft blanket.", emoji: "🛏️", colors: ["#ffd6a5", "#ffe5d9"],
+        choices: [{ text: "Feel how soft!", nextScene: 1 }, { text: "Hug it close!", nextScene: 1 }] },
+      { id: 1, text: "It is warm and cozy.", emoji: "🧡", colors: ["#ffe5a8", "#fff6dd"],
+        choices: [{ text: "Feel so warm!", nextScene: 2 }, { text: "Cuddle in tight!", nextScene: 2 }] },
+      { id: 2, text: "I wrap it around me.", emoji: "🤗", colors: ["#e0aaff", "#f3d9ff"],
+        choices: [{ text: "Spin around!", nextScene: 3 }, { text: "Wrap up snug!", nextScene: 3 }] },
+      { id: 3, text: "We snuggle up together tight.", emoji: "🧸", colors: ["#caffbf", "#e4ffe0"],
+        choices: [{ text: "Squeeze tight!", nextScene: 4 }, { text: "Close my eyes!", nextScene: 4 }] },
+      { id: 4, text: "My blanket makes me smile.", emoji: "😊", colors: ["#ffd6a5", "#ffe5d9"],
+        choices: [] }
+    ]
+  }
+];
+let currentStory = null;
+let currentSceneIndex = 0;
+const SPEECH_SUPPORTED = 'speechSynthesis' in window;
+let audioEnabled = localStorage.getItem('storyAudioEnabled') === 'true';
+let selectedVoice = null;
+let voiceLocked = false;
+
+function pickBestVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  const priorityNames = [
+    'Google UK English Female', 'Google US English',
+    'Samantha', 'Aria', 'Jenny', 'Zira', 'Google UK English Male'
+  ];
+  for (const name of priorityNames) {
+    const match = voices.find(v => v.name.includes(name));
+    if (match) return match;
+  }
+  const femaleEnglish = voices.find(v => /en(-|_)/i.test(v.lang) && /female/i.test(v.name));
+  if (femaleEnglish) return femaleEnglish;
+  const anyEnglish = voices.find(v => /^en/i.test(v.lang));
+  return anyEnglish || voices[0];
+}
+
+function lockInVoice() {
+  if (voiceLocked || !SPEECH_SUPPORTED) return;
+  const v = pickBestVoice();
+  if (v) {
+    selectedVoice = v;
+    voiceLocked = true;
+  }
+}
+
+if (SPEECH_SUPPORTED) {
+  lockInVoice();
+  window.speechSynthesis.onvoiceschanged = lockInVoice;
+}
+
+function initSettings() {
+  const toggle = document.getElementById('audioToggle');
+  const note = document.getElementById('unsupportedNote');
+  if (!SPEECH_SUPPORTED) {
+    toggle.disabled = true;
+    note.style.display = 'block';
+    audioEnabled = false;
+  } else {
+    toggle.checked = audioEnabled;
+  }
+  document.getElementById('levelSelect').value = childLevel;
+  updateReplayBtn();
+}
+
+let childLevel = localStorage.getItem('childLevel') || 'all';
+
+function setChildLevel(val) {
+  childLevel = val;
+  localStorage.setItem('childLevel', val);
+}
+
+function toggleSettings() {
+  document.getElementById('settingsPanel').classList.toggle('open');
+}
+
+let gateAnswer = 0;
+
+function openParentGate() {
+  const a = Math.floor(Math.random() * 8) + 2;
+  const b = Math.floor(Math.random() * 8) + 2;
+  gateAnswer = a + b;
+  document.getElementById('gateQuestion').textContent = `${a} + ${b} = ?`;
+  document.getElementById('gateInput').value = '';
+  document.getElementById('gateError').style.display = 'none';
+  if (SPEECH_SUPPORTED) window.speechSynthesis.cancel();
+  document.getElementById('gameCard').classList.remove('active');
+  document.getElementById('libraryView').style.display = 'none';
+  document.getElementById('settingsPanel').classList.remove('open');
+  document.getElementById('parentGateScreen').classList.add('open');
+  document.body.style.background = '';
+}
+
+function checkGateAnswer() {
+  const val = parseInt(document.getElementById('gateInput').value, 10);
+  if (val === gateAnswer) {
+    document.getElementById('parentGateScreen').classList.remove('open');
+    document.getElementById('settingsPanel').classList.add('open');
+  } else {
+    document.getElementById('gateError').style.display = 'block';
+  }
+}
+
+function closeParentGate() {
+  document.getElementById('parentGateScreen').classList.remove('open');
+  document.getElementById('libraryView').style.display = 'block';
+}
+
+function closeSettings() {
+  document.getElementById('settingsPanel').classList.remove('open');
+  document.getElementById('libraryView').style.display = 'block';
+  showCategories();
+}
+
+function setAudio(enabled) {
+  audioEnabled = enabled;
+  localStorage.setItem('storyAudioEnabled', enabled);
+  if (!enabled && SPEECH_SUPPORTED) window.speechSynthesis.cancel();
+  updateReplayBtn();
+}
+
+function updateReplayBtn() {
+  const btn = document.getElementById('replayBtn');
+  if (btn) btn.style.display = (SPEECH_SUPPORTED && audioEnabled) ? 'block' : 'none';
+}
+
+function buildSpeechParts(scene) {
+  const parts = (scene.text.match(/[^.!?]+[.!?]*/g) || [scene.text]).map(s => s.trim()).filter(Boolean);
+  if (scene.choices && scene.choices.length > 0) {
+    parts.push('What should happen next?');
+    scene.choices.forEach((c, i) => parts.push(`Button ${i + 1}: ${c.text}`));
+    parts.push('Tap a button to choose!');
+  }
+  return parts;
+}
+
+function speakParts(parts) {
+  if (!SPEECH_SUPPORTED) return;
+  window.speechSynthesis.cancel();
+  lockInVoice();
+  let i = 0;
+  function speakNext() {
+    if (i >= parts.length) return;
+    const utter = new SpeechSynthesisUtterance(parts[i]);
+    if (selectedVoice) utter.voice = selectedVoice;
+    utter.rate = 0.85;
+    utter.pitch = 1.0;
+    utter.onend = () => { i++; setTimeout(speakNext, 300); };
+    window.speechSynthesis.speak(utter);
+  }
+  speakNext();
+}
+
+function speakCurrentScene() {
+  if (!currentStory) return;
+  speakParts(buildSpeechParts(currentStory.scenes[currentSceneIndex]));
+}
+
+function renderStoryCards(list) {
+  return list.map((s, i) => `
+    <button class="story-card ${s.card}" style="animation-delay:${i * 0.08}s" onclick="playStory('${s.id}')">
+      <span class="icon">${s.cardIcon}</span>
+      <h4>${s.title}</h4>
+      <p>▶ TAP TO PLAY</p>
+    </button>
+  `).join('');
+}
+
+const CATEGORIES = [
+  { key: 1, icon: '👶', title: "My First Stories", sub: 'New to books', cardClass: 'card-c6', filter: s => s.level === 1 },
+  { key: 2, icon: '🌱', title: 'I Can Start Reading', sub: 'Age ~3–4', cardClass: 'card-c4', filter: s => s.level === 2 },
+  { key: 3, icon: '⭐', title: 'I Can Read More', sub: 'Age ~3–5', cardClass: 'card-c1', filter: s => s.level === 3 },
+  { key: 4, icon: '🚀', title: 'I Can Read a Story', sub: 'Age ~4–5', cardClass: 'card-c5', filter: s => s.level === 4 }
+];
+
+let currentCategoryKey = null;
+
+function renderCategories() {
+  const box = document.getElementById('categoryCards');
+  box.innerHTML = CATEGORIES.map((c, i) => {
+    const count = STORIES.filter(c.filter).length;
+    return `
+      <button class="story-card ${c.cardClass}" style="animation-delay:${i * 0.08}s" onclick="showCategoryStories(${c.key})">
+        <span class="icon">${c.icon}</span>
+        <h4>${c.title}</h4>
+        <p>${c.sub} · ${count} ${count === 1 ? 'story' : 'stories'}</p>
+      </button>
+    `;
+  }).join('');
+}
+
+function showCategories() {
+  currentCategoryKey = null;
+  if (childLevel !== 'all') {
+    showCategoryStories(parseInt(childLevel, 10));
+    return;
+  }
+  document.getElementById('categoryView').style.display = 'block';
+  document.getElementById('categoryStoriesView').style.display = 'none';
+}
+
+function showCategoryStories(key) {
+  currentCategoryKey = key;
+  const category = CATEGORIES.find(c => c.key === key);
+  document.getElementById('categoryTitle').textContent = `${category.icon} ${category.title}`;
+  const list = STORIES.filter(category.filter);
+  const box = document.getElementById('storiesList');
+  box.innerHTML = list.length
+    ? `<div class="story-grid">${renderStoryCards(list)}</div>`
+    : `<div class="category-empty">No stories in this level yet — ask Claude to add one!</div>`;
+  document.getElementById('categoryView').style.display = 'none';
+  document.getElementById('categoryStoriesView').style.display = 'block';
+  document.getElementById('categoriesBackLink').style.display = (childLevel === 'all') ? 'inline' : 'none';
+}
+
+function playStory(id) {
+  currentStory = STORIES.find(s => s.id === id);
+  if (!currentStory) return;
+  currentSceneIndex = 0;
+  starsCollected = 0;
+  document.getElementById('libraryView').style.display = 'none';
+  const gameCardEl = document.getElementById('gameCard');
+  gameCardEl.classList.add('active');
+  gameCardEl.classList.toggle('level1-mode', currentStory.level === 1);
+  document.getElementById('gameTitle').textContent = currentStory.title;
+  if (currentStory.bg) {
+    document.body.style.background = `linear-gradient(160deg, ${currentStory.bg[0]} 0%, ${currentStory.bg[1]} 100%)`;
+  }
+  renderScene();
+}
+
+let starsCollected = 0;
+let idleTimer = null;
+
+function resetIdleTimer() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    const el = document.getElementById('sceneEmoji');
+    if (!el) return;
+    el.classList.remove('emoji-invite');
+    void el.offsetWidth;
+    el.classList.add('emoji-invite');
+  }, 4500);
+}
+
+function bounceMascot() {
+  const m = document.getElementById('mascot');
+  if (!m) return;
+  m.classList.remove('happy');
+  void m.offsetWidth;
+  m.classList.add('happy');
+}
+
+function spawnConfetti() {
+  const card = document.getElementById('gameCard');
+  const colors = ['#ff69b4', '#ffd166', '#06d6a0', '#118ab2', '#ef476f', '#9d4edd'];
+  for (let i = 0; i < 18; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    piece.style.animationDelay = (Math.random() * 0.3) + 's';
+    card.appendChild(piece);
+    setTimeout(() => piece.remove(), 1800);
+  }
+}
+
+function spawnBubbles() {
+  const art = document.getElementById('sceneArt');
+  for (let i = 0; i < 6; i++) {
+    const b = document.createElement('span');
+    b.className = 'bubble';
+    const size = 10 + Math.random() * 18;
+    b.style.width = size + 'px';
+    b.style.height = size + 'px';
+    b.style.left = (5 + Math.random() * 90) + '%';
+    b.style.setProperty('--bx', (Math.random() * 40 - 20) + 'px');
+    b.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+    b.style.animationDelay = (Math.random() * 0.6) + 's';
+    art.appendChild(b);
+    setTimeout(() => b.remove(), 3600);
+  }
+}
+
+function spawnMiniBurst() {
+  const art = document.getElementById('sceneArt');
+  const emojis = ['✨', '🌟', '💖', '🎈'];
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'mini-burst';
+    s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    s.style.left = (40 + Math.random() * 20) + '%';
+    s.style.top = (40 + Math.random() * 20) + '%';
+    s.style.setProperty('--dx', (Math.random() * 140 - 70) + 'px');
+    s.style.setProperty('--dy', (Math.random() * -100 - 20) + 'px');
+    art.appendChild(s);
+    setTimeout(() => s.remove(), 700);
+  }
+}
+
+function renderScene() {
+  const scene = currentStory.scenes[currentSceneIndex];
+  const artBox = document.getElementById('sceneArt');
+  artBox.style.background = `linear-gradient(135deg, ${scene.colors[0]} 0%, ${scene.colors[1]} 100%)`;
+  artBox.style.animation = 'none';
+  void artBox.offsetWidth;
+  artBox.style.animation = 'sceneSlideIn 0.4s ease-out';
+
+  const emojiEl = document.getElementById('sceneEmoji');
+  emojiEl.textContent = scene.emoji;
+  emojiEl.classList.remove('emoji-invite');
+  emojiEl.style.animation = 'none';
+  void emojiEl.offsetWidth;
+  emojiEl.style.animation = null;
+
+  const textEl = document.getElementById('sceneText');
+  textEl.textContent = scene.text;
+  textEl.style.animation = 'none';
+  void textEl.offsetWidth;
+  textEl.style.animation = 'sceneSlideIn 0.45s ease-out';
+
+  if (audioEnabled) speakParts(buildSpeechParts(scene));
+
+  starsCollected++;
+  const starEl = document.getElementById('starCounter');
+  if (starEl) starEl.textContent = `⭐ ${starsCollected}`;
+
+  const dots = document.getElementById('progressDots');
+  dots.innerHTML = currentStory.scenes.map((_, i) => `<div class="dot ${i <= currentSceneIndex ? 'done' : ''}"></div>`).join('');
+
+  if (currentStory.level === 1) {
+    spawnBubbles();
+    spawnMiniBurst();
+  }
+
+  const choicesBox = document.getElementById('choices');
+  if (!scene.choices || scene.choices.length === 0) {
+    if (currentStory.navMode === 'level') {
+      choicesBox.innerHTML = `<button class="choice-btn" onclick="playNextInLevel()">▶️ Next Story</button><button class="choice-btn" onclick="stopReading()">⏹ Stop Reading</button>`;
+    } else {
+      choicesBox.innerHTML = `<button class="choice-btn" onclick="backToLibrary()">🎉 The End — Play Another Story!</button>`;
+    }
+    spawnConfetti();
+    bounceMascot();
+  } else {
+    choicesBox.innerHTML = scene.choices.map(c => `<button class="choice-btn" onclick="goToScene(${c.nextScene})">${c.text}</button>`).join('');
+  }
+
+  resetIdleTimer();
+}
+
+function goToScene(idx) {
+  bounceMascot();
+  currentSceneIndex = idx;
+  renderScene();
+}
+
+function popEmoji() {
+  resetIdleTimer();
+  const el = document.getElementById('sceneEmoji');
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'emojiPop 0.5s ease';
+  spawnSparkleBurst();
+  setTimeout(() => { el.style.animation = 'floaty 2.2s ease-in-out infinite'; }, 500);
+}
+
+function spawnSparkleBurst() {
+  const art = document.getElementById('sceneArt');
+  const emojis = ['✨', '⭐', '💫', '🎟'];
+  for (let i = 0; i < 6; i++) {
+    const s = document.createElement('span');
+    s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    s.style.position = 'absolute';
+    s.style.left = (35 + Math.random() * 30) + '%';
+    s.style.top = (35 + Math.random() * 30) + '%';
+    s.style.fontSize = (16 + Math.random() * 10) + 'px';
+    s.style.pointerEvents = 'none';
+    s.style.setProperty('--dx', (Math.random() * 180 - 90) + 'px');
+    s.style.setProperty('--dy', (Math.random() * -120 - 20) + 'px');
+    s.style.animation = 'burstFly 0.8s ease-out forwards';
+    art.appendChild(s);
+    setTimeout(() => s.remove(), 800);
+  }
+}
+
+function backToLibrary() {
+  clearTimeout(idleTimer);
+  if (SPEECH_SUPPORTED) window.speechSynthesis.cancel();
+  document.getElementById('gameCard').classList.remove('active');
+  document.getElementById('libraryView').style.display = 'block';
+  document.body.style.background = '';
+  if (currentCategoryKey) {
+    showCategoryStories(currentCategoryKey);
+  } else {
+    showCategories();
+  }
+}
+
+function playNextInLevel() {
+  const levelStories = STORIES.filter(s => s.level === currentStory.level);
+  const idx = levelStories.findIndex(s => s.id === currentStory.id);
+  const nextStory = levelStories[(idx + 1) % levelStories.length];
+  playStory(nextStory.id);
+}
+
+function stopReading() {
+  clearTimeout(idleTimer);
+  if (SPEECH_SUPPORTED) window.speechSynthesis.cancel();
+  document.getElementById('gameCard').classList.remove('active');
+  document.getElementById('libraryView').style.display = 'block';
+  document.body.style.background = '';
+  currentCategoryKey = null;
+  showCategories();
+}
+
+renderCategories();
+showCategories();
+initSettings();
+</script>
+
+<script>(function(){
+if(window.top===window.self)return;
+var WRAPPER_ORIGIN="https://sharable.link";
+function retarget(raw,isDownload){
+var here,url;
+try{here=new URL(location.href);url=new URL(raw,location.href)}catch(e){return null}
+if(url.protocol!=="http:"&&url.protocol!=="https:")return null;
+if(url.origin!==here.origin)return url.href;
+if(isDownload||url.pathname===here.pathname)return null;
+return WRAPPER_ORIGIN+url.pathname+url.search+url.hash}
+document.addEventListener("click",function(e){
+if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+if(document.querySelector("base[target]"))return;
+var a=e.target&&e.target.closest?e.target.closest("a[href]"):null;
+if(!a||(a.target&&a.target!=="_self"))return;
+var href=retarget(a.getAttribute("href"),a.hasAttribute("download"));
+if(!href)return;
+a.href=href;a.target="_top"});
+document.addEventListener("submit",function(e){
+var form=e.target;
+if(e.defaultPrevented||!form||form.target)return;
+var href=retarget(form.getAttribute("action"),false);
+if(!href)return;
+form.action=href;form.target="_top"})})();</script><script>(function(){
+if(window.top===window.self)return;
+var WRAPPER_ORIGIN="https://sharable.link";
+function retarget(raw,isDownload){
+var here,url;
+try{here=new URL(location.href);url=new URL(raw,location.href)}catch(e){return null}
+if(url.protocol!=="http:"&&url.protocol!=="https:")return null;
+if(url.origin!==here.origin)return url.href;
+if(isDownload||url.pathname===here.pathname)return null;
+return WRAPPER_ORIGIN+url.pathname+url.search+url.hash}
+document.addEventListener("click",function(e){
+if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+if(document.querySelector("base[target]"))return;
+var a=e.target&&e.target.closest?e.target.closest("a[href]"):null;
+if(!a||(a.target&&a.target!=="_self"))return;
+var href=retarget(a.getAttribute("href"),a.hasAttribute("download"));
+if(!href)return;
+a.href=href;a.target="_top"});
+document.addEventListener("submit",function(e){
+var form=e.target;
+if(e.defaultPrevented||!form||form.target)return;
+var href=retarget(form.getAttribute("action"),false);
+if(!href)return;
+form.action=href;form.target="_top"})})();</script></body>
+</html>

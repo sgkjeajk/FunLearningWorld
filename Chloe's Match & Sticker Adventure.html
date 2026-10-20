@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chloe's Match & Sticker Adventure</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(160deg, #e8f4fb 0%, #eaf6ec 35%, #fdf6e3 70%, #fdeef2 100%);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px 14px 60px;
+  }
+  .topbar { width: 100%; max-width: 640px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .icon-btn {
+    width: 52px; height: 52px; border-radius: 50%; background: #fff; border: none; font-size: 22px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); cursor: pointer;
+  }
+  .icon-btn.close { background: #f28b8b; color: #fff; font-weight: bold; }
+  .left-icons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .header-row { width: 100%; max-width: 640px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .cat-title { font-size: 26px; font-weight: 800; color: #e85d9c; display:flex; align-items:center; gap:8px; }
+  .star-pill {
+    background:#fff; border-radius: 999px; padding: 8px 16px; font-weight:800; font-size:18px; color:#e0a80a;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); display:flex; align-items:center; gap:6px;
+  }
+
+  .cat-picker { width: 100%; max-width: 640px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .cat-chip {
+    background: #fff; border: none; border-radius: 18px; padding: 16px 10px; font-size: 16px; font-weight: 700; color: #444;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .cat-chip span.emo { font-size: 28px; }
+  .cat-chip:active { transform: scale(0.97); }
+
+  .board-wrap { position: relative; width: 100%; max-width: 640px; }
+  #lineLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 1; }
+  .board { position: relative; z-index: 2; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 22px; background: transparent; }
+  .card {
+    border-radius: 18px; padding: 22px 10px; min-height: 92px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); cursor: pointer; border: 3px solid transparent;
+    transition: transform .12s ease, border-color .15s ease, background .2s ease; user-select: none;
+  }
+  .card:active { transform: scale(0.96); }
+  .card.pic { font-size: 44px; }
+  .pastel-blue   { background: linear-gradient(160deg,#eaf6ff,#dcefff); }
+  .pastel-pink   { background: linear-gradient(160deg,#fff0f5,#ffe3ee); }
+  .pastel-yellow { background: linear-gradient(160deg,#fffceb,#fff3cf); }
+  .pastel-green  { background: linear-gradient(160deg,#f0fbf2,#ddf5e2); }
+  .card.word { background: transparent; box-shadow: none; font-size: 22px; font-weight: 800; color: #3a3a3a; border: 3px dashed #d8d8d8; }
+  .card.word:hover { border-color: #bcbcbc; }
+  .card.selected { border-color: #7bb8ff; }
+  .card.correct { border-color: #6fd18f; opacity: 0.55; cursor: default; pointer-events: none; }
+  .card.wrong { border-color: #f28b8b; animation: shake .3s; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .overlay.show { display: flex; }
+  .overlay-card { background: #fff; border-radius: 24px; padding: 36px 28px; text-align: center; max-width: 340px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  .overlay-card .emoji-row { font-size: 48px; margin-bottom: 10px; }
+  .overlay-card h2 { margin: 0 0 6px; color: #e85d9c; }
+  .overlay-card p { color: #666; margin: 0 0 20px; }
+  .overlay-card button { background: #ffd15c; border: none; border-radius: 999px; padding: 12px 24px; font-weight: 800; font-size: 15px; cursor: pointer; margin: 6px 4px 0; }
+
+  .big-cel-card { border-radius: 28px; padding: 40px 28px; text-align: center; max-width: 360px; box-shadow: 0 14px 40px rgba(0,0,0,0.25); }
+  .big-cel-card .trophy { font-size: 60px; margin-bottom: 8px; }
+  .big-cel-card h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: 0.5px; }
+  .big-cel-card .sub { font-size: 16px; color: #555; margin: 0 0 18px; }
+  .stat-pill { background: rgba(255,255,255,0.75); border-radius: 999px; padding: 12px 18px; font-size: 15px; color: #444; margin: 0 auto 18px; display: inline-flex; align-items: center; gap: 8px; }
+  .sticker-reveal { background: #fff; border-radius: 20px; padding: 18px; margin-bottom: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+  .sticker-reveal .badge { display:inline-block; background:#ff6f91; color:#fff; font-weight:800; font-size:12px; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .sticker-reveal .big-emoji { font-size: 56px; }
+  .sticker-reveal .sticker-name { font-weight: 800; font-size: 18px; color: #444; margin-top: 4px; }
+  .big-cel-card button { border: none; border-radius: 999px; padding: 13px 22px; font-weight: 800; font-size: 15px; cursor: pointer; margin: 5px; }
+  .btn-green { background: #6fd18f; color: #fff; }
+  .btn-grey { background: #e2e6ea; color: #555; }
+
+  .album-wrap { width: 100%; max-width: 640px; }
+  .album-header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; }
+  .album-title { font-size: 24px; font-weight: 800; color: #e85d9c; }
+  .album-back { background:#fff; border:none; border-radius: 999px; padding: 10px 18px; font-weight:700; box-shadow: 0 4px 10px rgba(0,0,0,0.08); cursor:pointer; }
+  .album-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .sticker-slot { aspect-ratio: 1; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+  .sticker-slot.owned { background: linear-gradient(160deg,#fff8e6,#ffe9f0); }
+  .sticker-slot.locked { background: #eef0f2; }
+  .sticker-slot .emo { font-size: 30px; }
+  .sticker-slot.locked .emo { opacity: 0.25; }
+  .sticker-slot .nm { font-size: 10px; font-weight: 700; color: #666; margin-top: 4px; text-align: center; padding: 0 4px; }
+  .album-progress { text-align:center; color:#777; font-size:14px; margin-top: 14px; }
+
+  /* Settings / age screen */
+  .settings-wrap { width: 100%; max-width: 480px; text-align: center; }
+  .settings-wrap h2 { color: #e85d9c; font-size: 24px; margin-bottom: 6px; }
+  .settings-wrap p.sub { color: #777; margin-bottom: 22px; font-size: 15px; }
+  .age-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .age-chip {
+    background: #fff; border: 3px solid transparent; border-radius: 18px; padding: 18px 6px;
+    font-size: 20px; font-weight: 800; color: #444; box-shadow: 0 4px 10px rgba(0,0,0,0.08); cursor: pointer;
+  }
+  .age-chip.selected { border-color: #7bb8ff; background: #eaf6ff; }
+  .age-chip .lbl { display:block; font-size: 12px; font-weight:600; color:#888; margin-top:4px; }
+  .settings-save {
+    background: #6fd18f; color: #fff; border: none; border-radius: 999px; padding: 14px 32px;
+    font-weight: 800; font-size: 16px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  .settings-note { margin-top: 16px; font-size: 13px; color: #999; }
+
+  .mode-note {
+    max-width: 640px; width: 100%; background: #fff8e6; border: 2px dashed #ffd15c; border-radius: 14px;
+    padding: 10px 14px; font-size: 13px; color: #8a6d1a; margin-bottom: 16px; text-align: center;
+  }
+
+  /* ============ Enhanced look & feel ============ */
+  body {
+    background: linear-gradient(160deg, #eaf7ff 0%, #edfaf0 30%, #fffaf0 65%, #fff0f6 100%);
+    background-attachment: fixed;
+  }
+  .icon-btn { transition: transform .15s ease, box-shadow .15s ease; }
+  .icon-btn:active { transform: scale(0.9); }
+  .cat-title { text-shadow: 0 2px 0 rgba(255,255,255,0.6); }
+  .star-pill { animation: none; transition: transform .2s; }
+  .star-pill.bump { animation: bumpPill .35s ease; }
+  @keyframes bumpPill { 0%{transform:scale(1);} 40%{transform:scale(1.18);} 100%{transform:scale(1);} }
+
+  .cat-chip { transition: transform .15s ease, box-shadow .15s ease; }
+  .cat-chip:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.12); }
+
+  .card.pic { position: relative; overflow: hidden; perspective: 500px; }
+  .card.pic .pic-face { display:flex; align-items:center; justify-content:center; width:100%; transform: scale(0); transition: transform .4s cubic-bezier(.34,1.56,.64,1); }
+  .card.pic.revealed .pic-face { transform: scale(1); }
+  .card.pic.alive .pic-face { animation: livingWiggle 0.5s ease-in-out 4; }
+  @keyframes livingWiggle {
+    0%,100% { transform: scale(1) rotate(0deg) translateY(0); }
+    25%     { transform: scale(1.1) rotate(-9deg) translateY(-4px); }
+    50%     { transform: scale(1.15) rotate(0deg) translateY(-7px); }
+    75%     { transform: scale(1.1) rotate(9deg) translateY(-4px); }
+  }
+  /* 3D pop-in reveal: a livelier, more three-dimensional entrance than a
+     flat scale-up — the picture tumbles in with a little bounce and glow. */
+  .card.pic.reveal-3d .pic-face { animation: reveal3DPop .75s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes reveal3DPop {
+    0%   { transform: scale(0.2) rotateY(-100deg) rotateX(25deg) translateZ(-40px); filter: brightness(1) drop-shadow(0 0 0 rgba(255,209,92,0)); }
+    45%  { transform: scale(1.25) rotateY(20deg) rotateX(-8deg) translateZ(10px); filter: brightness(1.25) drop-shadow(0 0 14px rgba(255,209,92,0.85)); }
+    70%  { transform: scale(0.92) rotateY(-6deg) rotateX(3deg) translateZ(0px); filter: brightness(1.1) drop-shadow(0 0 8px rgba(255,209,92,0.5)); }
+    100% { transform: scale(1) rotateY(0deg) rotateX(0deg) translateZ(0px); filter: brightness(1) drop-shadow(0 0 0 rgba(255,209,92,0)); }
+  }
+  .card.pic.reveal-3d { animation: revealCardFlash .6s ease; }
+  @keyframes revealCardFlash {
+    0% { box-shadow: 0 0 0 0 rgba(255,209,92,0.9), 0 4px 10px rgba(0,0,0,0.08); }
+    40% { box-shadow: 0 0 0 10px rgba(255,209,92,0.35), 0 4px 10px rgba(0,0,0,0.08); }
+    100% { box-shadow: 0 0 0 0 rgba(255,209,92,0), 0 4px 10px rgba(0,0,0,0.08); }
+  }
+  .reveal-sparkle {
+    position: absolute; z-index: 4; pointer-events: none; font-size: 16px;
+    animation: revealSparkleFly 0.85s ease-out forwards;
+  }
+  @keyframes revealSparkleFly {
+    0%   { transform: translate(0,0) scale(0.4) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--sx), var(--sy)) scale(1.1) rotate(180deg); opacity: 0; }
+  }
+  .dust-veil {
+    position: absolute; inset: 0; border-radius: 16px; z-index: 3;
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(circle at 25% 30%, rgba(255,255,255,0.9) 0%, transparent 40%),
+      radial-gradient(circle at 75% 65%, rgba(255,255,255,0.7) 0%, transparent 45%),
+      linear-gradient(135deg, #ffe9b8, #ffd6e8 60%, #d9c2ff);
+    font-size: 22px; letter-spacing: 1px; color: #8a6d1a; font-weight: 800;
+    transition: opacity .45s ease, transform .45s ease;
+  }
+  .dust-veil.swiped { opacity: 0; transform: scale(1.5) rotate(6deg); pointer-events: none; }
+  .card.pic:not(.revealed) { cursor: pointer; }
+
+  .glow-target { box-shadow: 0 0 0 4px #ffd15c, 0 4px 10px rgba(0,0,0,0.08) !important; animation: glowPulse .8s infinite alternate; }
+  @keyframes glowPulse { from { box-shadow: 0 0 0 3px #ffd15c; } to { box-shadow: 0 0 0 9px #ffd15c; } }
+  .dimmed-out { opacity: .18; filter: grayscale(0.6); transition: opacity .3s; }
+
+  .powerup-row { display:flex; gap:8px; }
+  .pwr-btn {
+    position: relative; width: 52px; height: 52px; border-radius: 50%; border: none; background:#fff;
+    font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition: transform .15s ease;
+  }
+  .pwr-btn:active { transform: scale(0.88); }
+  .pwr-btn.disabled { opacity: .35; pointer-events: none; }
+  .pwr-count {
+    position:absolute; top:-4px; right:-4px; background:#e85d9c; color:#fff; font-size:10px; font-weight:800;
+    border-radius:999px; min-width:18px; height:18px; display:flex; align-items:center; justify-content:center; padding: 0 3px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .combo-pill {
+    background:#fff; border-radius:999px; padding:8px 14px; font-weight:800; font-size:15px; color:#e8823a;
+    box-shadow:0 4px 10px rgba(0,0,0,0.08); display:none; align-items:center; gap:5px;
+  }
+  .combo-pill.show { display:flex; }
+
+  body.frenzy .board, body.frenzy .board-wrap { animation: frenzyGlow 0.55s infinite alternate; }
+  @keyframes frenzyGlow { from { filter: drop-shadow(0 0 0 #ffd15c); } to { filter: drop-shadow(0 0 16px #ffd15c); } }
+  .combo-banner {
+    position: fixed; top: 12px; left: 50%; transform: translateX(-50%) translateY(-160%);
+    background: linear-gradient(135deg, #e85d9c, #ff9f6e); color:#fff; font-weight:900; font-size:15px;
+    padding:10px 20px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,0.25); z-index:80;
+    transition: transform .4s cubic-bezier(.34,1.56,.64,1); white-space:nowrap;
+  }
+  .combo-banner.show { transform: translateX(-50%) translateY(0); }
+  .confetti-bit { position: fixed; top:-10px; font-size:20px; z-index:70; pointer-events:none; animation: confettiFall linear forwards; }
+  @keyframes confettiFall { to { transform: translateY(110vh) rotate(420deg); opacity: 0.2; } }
+
+  .silly-bubble {
+    position: fixed; z-index: 90; background:#fff; border-radius:16px; padding:10px 14px;
+    font-weight:700; font-size:13px; box-shadow:0 6px 14px rgba(0,0,0,0.2); max-width:230px; text-align:center;
+    transform: translate(-50%,-120%) scale(0.6); opacity:0;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+  }
+  .silly-bubble.show { transform: translate(-50%,-145%) scale(1); opacity:1; }
+  .card.silly-away { animation: sillyRunaway .6s ease forwards; }
+  @keyframes sillyRunaway {
+    0%   { transform: translate(0,0) rotate(0deg); }
+    30%  { transform: translate(-16px,-4px) rotate(-10deg); }
+    60%  { transform: translate(18px,-8px) rotate(10deg) scale(1.05); }
+    100% { transform: translate(0,0) rotate(0deg) scale(1); }
+  }
+
+  .jigsaw-wrap {
+    width:100%; max-width:640px; border-radius:22px; overflow:hidden; position:relative;
+    margin-bottom:14px; display:none;
+    background: linear-gradient(180deg,#cdeffb,#fff2cf 65%, #f6dca8);
+    box-shadow: 0 8px 0 rgba(0,0,0,0.08), 0 14px 24px rgba(0,0,0,0.18);
+    border: 3px solid rgba(255,255,255,0.7);
+    padding: 16px 14px 30px;
+  }
+  .jigsaw-wrap.active { display:block; }
+  .reveal-slots { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .reveal-slot {
+    width:44px; height:44px; border-radius:50%; font-size:22px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.55); border:3px dashed rgba(255,255,255,0.9); color:#c9a15a;
+  }
+  .reveal-slot.filled {
+    border-style:solid; border-color:transparent; color:inherit;
+    background: radial-gradient(circle at 32% 28%, #ffffff, #fdf6e6 70%);
+    box-shadow:
+      inset 0 2px 3px rgba(255,255,255,0.95),
+      inset 0 -3px 4px rgba(0,0,0,0.12),
+      0 3px 0 rgba(0,0,0,0.12),
+      0 6px 8px rgba(0,0,0,0.18);
+    animation: slotPop .6s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes slotPop {
+    0%   { transform: scale(0.2) rotate(-20deg); }
+    60%  { transform: scale(1.25) rotate(8deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  #revealSlots.celebrate .reveal-slot.filled {
+    animation: slotCelebrate 1s ease-in-out;
+  }
+  @keyframes slotCelebrate {
+    0%,100% { transform: scale(1) rotate(0); }
+    30% { transform: scale(1.3) rotate(-8deg); box-shadow: 0 0 0 6px rgba(255,209,92,0.55), 0 10px 16px rgba(0,0,0,0.22); }
+    60% { transform: scale(1.15) rotate(8deg); }
+  }
+  .jigsaw-caption {
+    text-align:center; font-size:11px; font-weight:800; color:#5a4a30;
+    margin-top:12px;
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="left-icons">
+    <button class="icon-btn" id="soundBtn">🔊</button>
+    <button class="icon-btn" id="albumBtn">🎁</button>
+    <button class="icon-btn" id="settingsBtn">⚙️</button>
+    <button class="icon-btn" id="homeBtn">🏠</button>
+  </div>
+  <button class="icon-btn close" id="closeBtn">✕</button>
+</div>
+
+<div class="header-row">
+  <div class="cat-title" id="catTitle">🍎 Fruits</div>
+  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+    <div class="powerup-row" id="powerupRow" style="display:none;">
+      <button class="pwr-btn" id="wandBtn" title="Magic Wand: highlight the answer">🪄<span class="pwr-count" id="wandCount">3</span></button>
+      <button class="pwr-btn" id="lightBtn" title="Flashlight: dim wrong words">🔦<span class="pwr-count" id="lightCount">3</span></button>
+    </div>
+    <div class="combo-pill" id="comboPill">🔥 <span id="comboCount">0</span></div>
+    <div class="star-pill" id="levelPill" style="display:none;">🎯 <span id="levelLabel">Easy</span></div>
+    <div class="star-pill" id="starPill">⭐ <span id="starCount">0</span></div>
+  </div>
+</div>
+
+<div class="combo-banner" id="comboBanner">🎉 Combo Frenzy!</div>
+
+<!-- Age / settings screen -->
+<div class="settings-wrap" id="settingsWrap" style="display:none;">
+  <h2>👋 Let's set things up!</h2>
+  <p class="sub">How old is the child playing? This sets how many words appear per round.</p>
+  <input type="text" id="childNameInput" placeholder="Child's name (e.g. Chloe)"
+    style="width:100%; max-width:320px; padding:14px 16px; border-radius:14px; border:2px solid #eee; font-size:16px; margin-bottom:20px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.06);">
+  <select id="ageSelect" style="width:100%; max-width:320px; padding:14px 16px; border-radius:14px; border:2px solid #eee; font-size:18px; font-weight:700; margin-bottom:24px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.06); background:#fff; color:#444; -webkit-appearance:none; appearance:none;"></select>
+  <p class="sub" style="margin-bottom:10px;">Difficulty for this age (starts Easy, levels up automatically as your child matches correctly — or set it yourself):</p>
+  <div class="age-grid" id="diffGrid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 20px;"></div>
+  <p class="sub" style="margin-bottom:10px;">What should the hidden reveal picture show? Pick something your child loves:</p>
+  <select id="jigsawThemeSelect" style="width:100%; max-width:320px; padding:14px 16px; border-radius:14px; border:2px solid #eee; font-size:16px; font-weight:700; margin-bottom:24px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.06); background:#fff; color:#444; -webkit-appearance:none; appearance:none;"></select>
+  <button class="settings-save" id="saveAgeBtn">Save & Play</button>
+  <p class="settings-note">You can change this anytime from the ⚙️ button.</p>
+</div>
+
+<div id="catPicker" class="cat-picker" style="display:none;"></div>
+
+<div class="jigsaw-wrap" id="jigsawWrap">
+  <div class="reveal-slots" id="revealSlots"></div>
+  <div class="jigsaw-caption">Match each one to reveal a new picture!</div>
+</div>
+
+<div class="board-wrap" id="boardWrap" style="display:none;">
+  <svg id="lineLayer"></svg>
+  <div id="board" class="board"></div>
+</div>
+
+<div class="album-wrap" id="albumWrap" style="display:none;">
+  <div class="album-header">
+    <div class="album-title">🎁 Sticker Album</div>
+    <button class="album-back" id="albumBackBtn">← Back</button>
+  </div>
+  <div class="album-grid" id="albumGrid"></div>
+  <div class="album-progress" id="albumProgress"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <div class="emoji-row" id="overlayEmoji">🎉🦁🌈</div>
+    <h2 id="overlayHeadline">Great job!</h2>
+    <p id="overlayText">You matched everything!</p>
+    <button id="playAgainBtn">Play Again</button>
+    <button id="changeCatBtn">Choose Category</button>
+  </div>
+</div>
+
+<div class="overlay" id="bigCel">
+  <div class="big-cel-card" id="bigCelCard">
+    <div class="trophy" id="bigCelTrophy">🏆</div>
+    <h1 id="bigCelHeadline" style="color:#e85d9c;">YOU DID IT!</h1>
+    <p class="sub" id="bigCelSub">Chloe, you earned 10 stars!</p>
+    <div class="stat-pill" id="bigCelStat">⭐ <span id="bigCelStarTotal">10</span> stars collected so far — amazing!</div>
+    <div class="sticker-reveal">
+      <div class="badge">NEW STICKER!</div>
+      <div class="big-emoji" id="newStickerEmoji">🦄</div>
+      <div class="sticker-name" id="newStickerName">Unicorn</div>
+    </div>
+    <button class="btn-green" id="viewAlbumBtn">See My Sticker Album</button>
+    <button class="btn-grey" id="keepPlayingBtn">Keep Playing</button>
+  </div>
+</div>
+
+<script>
+let PLAYER_NAME = "Chloe";
+
+const CATEGORIES = {
+  "Animals":  {emoji:"🐶", items:[["🐶","Dog"],["🐱","Cat"],["🐘","Elephant"],["🦁","Lion"],["🐵","Monkey"],["🐰","Rabbit"]]},
+  "Colours":  {emoji:"🎨", items:[["🔴","Red"],["🟡","Yellow"],["🟢","Green"],["🔵","Blue"],["🟣","Purple"],["🟠","Orange"]]},
+  "Shapes":   {emoji:"⭐", items:[["⭐","Star"],["⚪","Circle"],["🔺","Triangle"],["🟥","Square"],["💎","Diamond"],["❤️","Heart"]]},
+  "Fruits":   {emoji:"🍎", items:[["🍑","Peach"],["🍉","Watermelon"],["🍎","Apple"],["🍌","Banana"],["🍇","Grapes"],["🍓","Strawberry"]]},
+  "Vegetables": {emoji:"🥕", items:[["🥕","Carrot"],["🥦","Broccoli"],["🌽","Corn"],["🍅","Tomato"],["🥒","Cucumber"],["🥔","Potato"]]},
+  "Food":     {emoji:"🍕", items:[["🍕","Pizza"],["🍔","Burger"],["🍞","Bread"],["🧀","Cheese"],["🍰","Cake"],["🍦","Ice Cream"]]},
+  "Vehicles": {emoji:"🚗", items:[["🚗","Car"],["🚌","Bus"],["🚲","Bicycle"],["🚀","Rocket"],["✈️","Airplane"],["🚂","Train"]]},
+  "Nature":   {emoji:"🌳", items:[["🌳","Tree"],["🌸","Flower"],["⛰️","Mountain"],["🌊","Wave"],["☀️","Sun"],["🌙","Moon"]]},
+  "Objects":  {emoji:"📚", items:[["📚","Book"],["✏️","Pencil"],["🔑","Key"],["🎈","Balloon"],["🎁","Gift"],["🕰️","Clock"]]},
+  "Ocean Animals": {emoji:"🐳", items:[["🐳","Whale"],["🐠","Fish"],["🐙","Octopus"],["🦀","Crab"],["🐬","Dolphin"],["🐢","Turtle"]]},
+  "Bugs & Insects": {emoji:"🐝", items:[["🐝","Bee"],["🦋","Butterfly"],["🐞","Ladybug"],["🐜","Ant"],["🕷️","Spider"],["🦗","Cricket"]]},
+  "Birds":    {emoji:"🐦", items:[["🐦","Bird"],["🦅","Eagle"],["🦉","Owl"],["🦜","Parrot"],["🐧","Penguin"],["🦆","Duck"]]},
+  "Pets":     {emoji:"🐹", items:[["🐶","Dog"],["🐱","Cat"],["🐹","Hamster"],["🐟","Fish"],["🐰","Rabbit"],["🐦","Bird"]]},
+  "Clothes":  {emoji:"👕", items:[["👕","Shirt"],["👖","Pants"],["🧦","Socks"],["👗","Dress"],["🧢","Cap"],["👟","Shoes"]]},
+  "Body Parts": {emoji:"👀", items:[["👀","Eyes"],["👃","Nose"],["👂","Ears"],["👄","Mouth"],["🦷","Teeth"],["🤚","Hand"]]},
+  "Kitchen Items": {emoji:"🍴", items:[["🍴","Fork"],["🥄","Spoon"],["🍽️","Plate"],["🥣","Bowl"],["☕","Cup"],["🍳","Pan"]]},
+  "Furniture & Home Items": {emoji:"🛏️", items:[["🛏️","Bed"],["🪑","Chair"],["🛋️","Sofa"],["🚪","Door"],["🪟","Window"],["🪞","Mirror"]]},
+  "Toys":     {emoji:"🧸", items:[["🧸","Teddy Bear"],["⚽","Ball"],["🪁","Kite"],["🎲","Dice"],["🧩","Puzzle"],["🪀","Yo-yo"]]},
+  "Weather":  {emoji:"🌈", items:[["☀️","Sunny"],["🌧️","Rainy"],["⛈️","Stormy"],["❄️","Snowy"],["🌈","Rainbow"],["☁️","Cloudy"]]},
+  "Musical Instruments": {emoji:"🎸", items:[["🎸","Guitar"],["🥁","Drum"],["🎹","Piano"],["🎺","Trumpet"],["🎻","Violin"],["🎤","Microphone"]]},
+  "Places":   {emoji:"🏠", items:[["🏠","House"],["🏫","School"],["🏥","Hospital"],["🏖️","Beach"],["🏞️","Park"],["🏰","Castle"]]},
+  "Occupations": {emoji:"👨‍⚕️", items:[["👨‍⚕️","Doctor"],["👩‍🏫","Teacher"],["👮","Police Officer"],["👨‍🍳","Chef"],["👩‍🚒","Firefighter"],["👨‍✈️","Pilot"]]}
+};
+
+const STICKERS = [
+  {id:"unicorn",   emoji:"🦄", name:"Unicorn"}, {id:"dolphin",   emoji:"🐬", name:"Dolphin"},
+  {id:"star",      emoji:"🌟", name:"Shooting Star"}, {id:"candy",     emoji:"🍭", name:"Candy"},
+  {id:"butterfly", emoji:"🦋", name:"Butterfly"}, {id:"panda",     emoji:"🐼", name:"Panda"},
+  {id:"icecream",  emoji:"🍦", name:"Ice Cream"}, {id:"rocket",    emoji:"🚀", name:"Rocket"},
+  {id:"rainbow",   emoji:"🌈", name:"Rainbow"}, {id:"balloon",   emoji:"🎈", name:"Balloon"},
+  {id:"cupcake",   emoji:"🧁", name:"Cupcake"}, {id:"kite",      emoji:"🪁", name:"Kite"},
+  {id:"crown",     emoji:"👑", name:"Crown"}, {id:"puppy",     emoji:"🐶", name:"Puppy"},
+  {id:"kitten",    emoji:"🐱", name:"Kitten"}, {id:"turtle",    emoji:"🐢", name:"Turtle"},
+  {id:"flower",    emoji:"🌸", name:"Flower"}, {id:"gem",       emoji:"💎", name:"Gem"},
+  {id:"trophy",    emoji:"🏆", name:"Trophy"}, {id:"medal",     emoji:"🏅", name:"Medal"}
+];
+
+const CELEBRATIONS = [
+  { bg: "linear-gradient(160deg,#fff4d6,#ffe4ef)", trophy: "🏆", headline: "YOU DID IT!",      color:"#e85d9c" },
+  { bg: "linear-gradient(160deg,#e0f7ff,#e8fff0)", trophy: "🌟", headline: "SUPER STAR!",       color:"#2aa1d6" },
+  { bg: "linear-gradient(160deg,#fdeee8,#fff6d6)", trophy: "🎉", headline: "AMAZING WORK!",     color:"#e8823a" },
+  { bg: "linear-gradient(160deg,#f0e8ff,#e8f4ff)", trophy: "🦄", headline: "WOW, YOU'RE A STAR!", color:"#8a5ce8" }
+];
+
+const ROUND_ENCOURAGE = ["You're doing brilliantly!", "Look at you go!", "Every word, perfect!", "You're a matching champion!", "So proud of you!"];
+
+const AGE_OPTIONS = [3, 4, 5, 6, 7];
+function wordsForAge(age) {
+  if (age <= 3) return 2;
+  if (age === 4) return 3;
+  if (age === 5) return 4;
+  if (age === 6) return 5;
+  return 6; // 7 and up
+}
+const LEVEL_NAMES = ["Easy", "Medium", "Hard", "Advanced"]; // tier 1-4
+const ROUNDS_TO_ADVANCE = 2; // perfect rounds in a row needed to level up
+
+const palette = ["pastel-blue","pastel-pink","pastel-yellow","pastel-green"];
+let soundOn = true;
+let currentCat = "Fruits";
+let stars = 0;
+let selectedPic = null;
+let matchesLeft = 0;
+let currentItems = [];
+let selectedVoice = null;
+let ownedStickers = [];
+let childAge = null;
+let previousView = 'game';
+let difficultyTier = 1; // 1=Easy, 2=Medium, 3=Hard, resets fresh per age
+let perfectStreak = 0;
+let wrongThisRound = 0;
+let lastRoundWords = {}; // { categoryName: [word, word, ...] } — avoids repeating the same set on replay
+
+// ---- New: power-ups, combo, jigsaw, adaptive difficulty ----
+const POWERUP_STARTING_USES = 3;
+let wandUses = POWERUP_STARTING_USES;
+let lightUses = POWERUP_STARTING_USES;
+let comboCount = 0;
+let lastMatchAt = 0;
+let lastActionAt = 0;
+let hesitationFlag = false;
+let adaptiveMod = 0; // -1, 0, or +1 applied to next round's word count
+const HESITATION_MS = 9000;
+const COMBO_WINDOW_MS = 3500;
+const SILLY_LINES = [
+  (pic, word) => `Whoops! The ${pic} didn't want to sit next to "${word}" — it ran off giggling! 😄`,
+  (pic, word) => `Oops! The ${pic} tried to hide inside "${word}" — silly ${pic}!`,
+  (pic, word) => `Giggle! The ${pic} bounced right off "${word}" — try again!`,
+  (pic, word) => `Ha! The ${pic} went the wrong way and bumped into "${word}"! 🚗💨`,
+];
+
+function loadProgress() {
+  try {
+    stars = parseInt(localStorage.getItem('csa_stars') || '0', 10) || 0;
+    ownedStickers = JSON.parse(localStorage.getItem('csa_stickers') || '[]');
+    const savedAge = localStorage.getItem('csa_age');
+    childAge = savedAge ? parseInt(savedAge, 10) : null;
+    const savedName = localStorage.getItem('csa_name');
+    if (savedName) PLAYER_NAME = savedName;
+  } catch (e) { stars = 0; ownedStickers = []; childAge = null; }
+}
+function saveProgress() {
+  try {
+    localStorage.setItem('csa_stars', String(stars));
+    localStorage.setItem('csa_stickers', JSON.stringify(ownedStickers));
+  } catch (e) {}
+}
+function saveAge() {
+  try {
+    localStorage.setItem('csa_age', String(childAge));
+    localStorage.setItem('csa_name', PLAYER_NAME);
+  } catch (e) {}
+}
+function loadTierForAge(age) {
+  try {
+    const t = localStorage.getItem('csa_tier_' + age);
+    return t ? parseInt(t, 10) : 1;
+  } catch (e) { return 1; }
+}
+function saveTierForAge(age, tier) {
+  try { localStorage.setItem('csa_tier_' + age, String(tier)); } catch (e) {}
+}
+function updateLevelBadge() {
+  const pill = document.getElementById('levelPill');
+  document.getElementById('levelLabel').textContent = LEVEL_NAMES[difficultyTier - 1];
+  pill.style.display = 'flex';
+}
+
+let voiceLocked = false;
+
+function pickBestVoice() {
+  if (voiceLocked) return; // never swap voices mid-session once one is locked in
+  if (!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return;
+
+  const asianEnglishLocales = ['en-sg', 'en-in', 'en-hk', 'en-ph', 'en-my'];
+  const femalePattern = /female|samantha|victoria|karen|serena|moira|tessa|zira|susan|fiona|kate|ava|allison|joanna|salli|aria|zoe|jenny|nicky|amy/i;
+  const malePattern = /\bmale\b|daniel|david|alex\b|fred|thomas|george|james|mark|paul|ryan|oliver|arthur|guy|eric|brian|justin|christopher|matthew|nathan|russell|rishi|ravi/i;
+
+  // Ordered by how clear & natural they tend to sound for young children.
+  // Checked as substring matches against the voice name, in priority order.
+  const preferredNames = [
+    'Google UK English Female',
+    'Google US English',
+    'Samantha',
+    'Microsoft Aria',
+    'Microsoft Jenny',
+    'Microsoft Zira',
+    'Victoria',
+    'Karen',
+    'Moira',
+    'Tessa',
+    'Fiona',
+    'Kate',
+    'Ava',
+    'Allison',
+    'Joanna',
+    'Salli',
+    'Zoe',
+    'Nicky',
+    'Amy',
+  ];
+
+  // 1. Exact/substring match against the clarity-ranked preference list, in order.
+  for (const name of preferredNames) {
+    const match = voices.find(v => v.name && v.name.toLowerCase().includes(name.toLowerCase()));
+    if (match) { selectedVoice = match; voiceLocked = true; return; }
+  }
+
+  // 2. Regional English fallback (kept from the original device-consistency logic).
+  for (const loc of asianEnglishLocales) {
+    const matches = voices.filter(v => v.lang && v.lang.toLowerCase() === loc);
+    if (matches.length) {
+      selectedVoice = matches.find(v => femalePattern.test(v.name) && !malePattern.test(v.name))
+        || matches.find(v => !malePattern.test(v.name))
+        || matches[0];
+      voiceLocked = true;
+      return;
+    }
+  }
+
+  // 3. Any clear female English voice, then any English voice, then anything at all.
+  let voice = voices.find(v => femalePattern.test(v.name) && !malePattern.test(v.name) && v.lang && v.lang.toLowerCase().startsWith('en'));
+  if (!voice) voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en') && !malePattern.test(v.name));
+  if (!voice) voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+  selectedVoice = voice || voices[0];
+  voiceLocked = true;
+}
+if ('speechSynthesis' in window) { pickBestVoice(); window.speechSynthesis.onvoiceschanged = pickBestVoice; }
+
+const board = document.getElementById('board');
+const catTitle = document.getElementById('catTitle');
+const starCount = document.getElementById('starCount');
+const catPicker = document.getElementById('catPicker');
+const overlay = document.getElementById('overlay');
+const overlayText = document.getElementById('overlayText');
+const overlayHeadline = document.getElementById('overlayHeadline');
+const albumWrap = document.getElementById('albumWrap');
+const bigCel = document.getElementById('bigCel');
+const boardWrap = document.getElementById('boardWrap');
+const settingsWrap = document.getElementById('settingsWrap');
+
+function beep(freq, dur) {
+  if (!soundOn) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.frequency.value = freq; osc.connect(gain); gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+  } catch(e) {}
+}
+
+// A cute, magical "pop-sparkle" chime played when a picture is revealed
+// for the first time — distinct from the tap-beep and correct-match beep,
+// with a small pitch offset per card so a full round of reveals doesn't
+// sound identical every time.
+function revealChime(pitchOffset) {
+  if (!soundOn) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const base = 700 + (pitchOffset || 0) * 40;
+    [base, base * 1.5, base * 2].forEach((f, i) => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.value = f; osc.connect(gain); gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + i * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + i * 0.05 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.05 + 0.22);
+      osc.start(ctx.currentTime + i * 0.05); osc.stop(ctx.currentTime + i * 0.05 + 0.24);
+    });
+  } catch (e) {}
+}
+
+function sillyHonk() {
+  if (!soundOn) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [220, 160].forEach((f, i) => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = 'sawtooth'; osc.frequency.value = f; osc.connect(gain); gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.09);
+      osc.start(ctx.currentTime + i * 0.09); osc.stop(ctx.currentTime + i * 0.09 + 0.18);
+    });
+  } catch (e) {}
+}
+function comboArpeggio() {
+  if (!soundOn) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [660, 880, 1100, 1320].forEach((f, i) => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = 'square'; osc.frequency.value = f; osc.connect(gain); gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.08);
+      osc.start(ctx.currentTime + i * 0.08); osc.stop(ctx.currentTime + i * 0.08 + 0.15);
+    });
+  } catch (e) {}
+}
+
+const PRAISE = ["Great job!", "Well done!", "You did it!", "Fantastic!", "Awesome!", "Super!", "Yay, correct!", "Amazing!"];
+
+function speak(text, opts) {
+  if (!soundOn) return;
+  if (!('speechSynthesis' in window)) return;
+  try {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = (opts && opts.rate) || 0.82;   // slow and clear, not robotic
+    utter.pitch = (opts && opts.pitch) || 1.15; // warm, not squeaky
+    utter.volume = 1;
+    if (selectedVoice) utter.voice = selectedVoice;
+    window.speechSynthesis.speak(utter);
+  } catch (e) {}
+}
+function randRange(min, max) { return min + Math.random() * (max - min); }
+function livelyOpts() {
+  // Upbeat delivery for praise/celebration moments, with slight variation
+  // each time so repeated praise doesn't sound flat or robotic.
+  return { pitch: randRange(1.35, 1.55), rate: randRange(0.98, 1.12) };
+}
+function speakPraise() { speak(PRAISE[Math.floor(Math.random() * PRAISE.length)], livelyOpts()); }
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+// A little burst of sparkle emoji flying outward from a revealed picture —
+// purely decorative, layered on top of the CSS 3D pop-in.
+function spawnRevealSparkles(cardEl) {
+  const sparkleEmojis = ['✨', '⭐', '💫'];
+  for (let i = 0; i < 6; i++) {
+    const s = document.createElement('span');
+    s.className = 'reveal-sparkle';
+    s.textContent = sparkleEmojis[i % sparkleEmojis.length];
+    const angle = (i / 6) * Math.PI * 2;
+    const dist = 34 + Math.random() * 14;
+    s.style.setProperty('--sx', Math.cos(angle) * dist + 'px');
+    s.style.setProperty('--sy', Math.sin(angle) * dist + 'px');
+    s.style.left = '50%';
+    s.style.top = '50%';
+    cardEl.appendChild(s);
+    setTimeout(() => s.remove(), 900);
+  }
+}
+
+// ---------- Settings / Age screen ----------
+function buildAgeSelect() {
+  const select = document.getElementById('ageSelect');
+  select.innerHTML = "";
+  AGE_OPTIONS.forEach(age => {
+    const opt = document.createElement('option');
+    opt.value = age;
+    opt.textContent = `Age ${age}${age === 7 ? '+' : ''}`;
+    if (age === childAge) opt.selected = true;
+    select.appendChild(opt);
+  });
+  select.onchange = () => {
+    childAge = parseInt(select.value, 10);
+    buildDifficultyGrid();
+  };
+}
+
+let pendingDifficultyTier = null;
+function buildDifficultyGrid() {
+  const age = childAge || 5;
+  const grid = document.getElementById('diffGrid');
+  grid.innerHTML = "";
+  const currentTierForAge = pendingDifficultyTier || loadTierForAge(age);
+  LEVEL_NAMES.forEach((label, i) => {
+    const tier = i + 1;
+    const chip = document.createElement('button');
+    chip.className = 'age-chip' + (tier === currentTierForAge ? ' selected' : '');
+    chip.style.fontSize = '15px';
+    chip.textContent = label;
+    chip.onclick = () => {
+      pendingDifficultyTier = tier;
+      document.querySelectorAll('#diffGrid .age-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+    };
+    grid.appendChild(chip);
+  });
+}
+
+function buildJigsawThemeSelect() {
+  const select = document.getElementById('jigsawThemeSelect');
+  select.innerHTML = "";
+  Object.keys(JIGSAW_THEME_LABELS).forEach(key => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = JIGSAW_THEME_LABELS[key];
+    if (key === jigsawTheme) opt.selected = true;
+    select.appendChild(opt);
+  });
+}
+
+function showSettings(isFirstRun) {
+  hideAllScreens();
+  buildAgeSelect();
+  pendingDifficultyTier = null;
+  buildDifficultyGrid();
+  buildJigsawThemeSelect();
+  document.getElementById('childNameInput').value = PLAYER_NAME === "Chloe" && !localStorage.getItem('csa_name') ? '' : PLAYER_NAME;
+  settingsWrap.style.display = 'block';
+  document.getElementById('saveAgeBtn').onclick = () => {
+    if (!childAge) childAge = 5; // sensible default if they skip
+    const nameVal = document.getElementById('childNameInput').value.trim();
+    if (nameVal) PLAYER_NAME = nameVal;
+    saveAge();
+    if (pendingDifficultyTier) {
+      saveTierForAge(childAge, pendingDifficultyTier);
+      perfectStreak = 0;
+    }
+    jigsawTheme = document.getElementById('jigsawThemeSelect').value;
+    saveJigsawTheme(jigsawTheme);
+    settingsWrap.style.display = 'none';
+    showCategoryPicker();
+  };
+}
+
+function hideAllScreens() {
+  settingsWrap.style.display = 'none';
+  catPicker.style.display = 'none';
+  boardWrap.style.display = 'none';
+  albumWrap.style.display = 'none';
+  document.getElementById('jigsawWrap').classList.remove('active');
+  document.getElementById('powerupRow').style.display = 'none';
+  document.getElementById('comboPill').classList.remove('show');
+}
+
+function showCategoryPicker() {
+  hideAllScreens();
+  catTitle.textContent = '';
+  document.getElementById('levelPill').style.display = 'none';
+  catPicker.style.display = 'grid';
+}
+
+function buildCategoryPicker() {
+  catPicker.innerHTML = "";
+  Object.keys(CATEGORIES).forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-chip';
+    btn.innerHTML = `<span class="emo">${CATEGORIES[name].emoji}</span>${name}`;
+    btn.onclick = () => { loadCategory(name); };
+    catPicker.appendChild(btn);
+  });
+}
+
+function loadCategory(name) {
+  currentCat = name;
+  catTitle.textContent = `${CATEGORIES[name].emoji} ${name}`;
+  hideAllScreens();
+  boardWrap.style.display = 'block';
+  previousView = 'game';
+  selectedPic = null;
+  wrongThisRound = 0;
+
+  const age = childAge || 5;
+  difficultyTier = loadTierForAge(age);
+  updateLevelBadge();
+
+  const baseCount = wordsForAge(age);
+  // Cap raised to 7 (was 6) so the highest difficulty tier at the oldest
+  // ages, plus an adaptive-difficulty bonus, can reach a full 7-picture round.
+  let wordCount = Math.min(baseCount + (difficultyTier - 1) + adaptiveMod, 7);
+  wordCount = Math.max(wordCount, 3);
+  adaptiveMod = 0; // consumed for this round; re-earned based on this round's play
+  const fullItems = CATEGORIES[name].items;
+
+  // Word complexity progression: sort by word length (a simple proxy for
+  // difficulty — "Cat" is easier than "Elephant"). Lower tiers only draw
+  // from the simplest portion of the list; higher tiers unlock longer,
+  // more complex words too.
+  const sortedByComplexity = [...fullItems].sort((a, b) => a[1].length - b[1].length);
+  const poolFraction = [0.5, 0.75, 1, 1][difficultyTier - 1];
+  const poolSize = Math.max(wordCount, Math.ceil(sortedByComplexity.length * poolFraction));
+  const pool = sortedByComplexity.slice(0, Math.min(poolSize, sortedByComplexity.length));
+
+  const lastWords = lastRoundWords[name] || [];
+  const freshItems = shuffle(pool.filter(it => !lastWords.includes(it[1])));
+  const usedItems = shuffle(pool.filter(it => lastWords.includes(it[1])));
+  // Prioritize words not used last round; only dip into last round's words
+  // to fill remaining slots if the pool is too small to avoid it entirely.
+  const items = freshItems.concat(usedItems).slice(0, Math.min(wordCount, pool.length));
+  currentItems = items;
+  lastRoundWords[name] = items.map(it => it[1]);
+
+  const leftItems = shuffle(items.map((it, idx) => ({ idx, emoji: it[0] })));
+  const rightItems = shuffle(items.map((it, idx) => ({ idx, word: it[1] })));
+
+  matchesLeft = items.length;
+  board.innerHTML = "";
+  document.getElementById('lineLayer').innerHTML = "";
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+  // reset power-ups & combo for the new round
+  wandUses = POWERUP_STARTING_USES; lightUses = POWERUP_STARTING_USES;
+  document.getElementById('wandCount').textContent = wandUses;
+  document.getElementById('lightCount').textContent = lightUses;
+  document.getElementById('wandBtn').classList.remove('disabled');
+  document.getElementById('lightBtn').classList.remove('disabled');
+  document.getElementById('powerupRow').style.display = 'flex';
+  comboCount = 0; lastMatchAt = 0;
+  updateComboDisplay();
+  lastActionAt = Date.now();
+  hesitationFlag = false;
+  clearTimeout(window._hesitationTimer);
+  window._hesitationTimer = setTimeout(() => { hesitationFlag = true; }, HESITATION_MS);
+
+  for (let i = 0; i < items.length; i++) {
+    const picIt = leftItems[i];
+    const picEl = document.createElement('div');
+    picEl.className = `card pic ${palette[i % palette.length]}`;
+    picEl.innerHTML = `<span class="pic-face">${picIt.emoji}</span><div class="dust-veil"><span>✨ tap ✨</span></div>`;
+    picEl.dataset.idx = picIt.idx;
+    picEl.addEventListener('click', () => onPicClick(picEl, picIt.idx));
+    board.appendChild(picEl);
+
+    const wordIt = rightItems[i];
+    const wordEl = document.createElement('div');
+    wordEl.className = 'card word';
+    wordEl.textContent = wordIt.word;
+    wordEl.dataset.idx = wordIt.idx;
+    wordEl.addEventListener('click', () => onWordClick(wordEl, wordIt.idx));
+    board.appendChild(wordEl);
+  }
+
+  // The Pets category's pictures looked different on Windows vs iPhone
+  // because each OS draws its own emoji artwork. Twemoji replaces the
+  // emoji characters with the same image file everywhere, so it looks
+  // identical on every device.
+  if (name === 'Pets' && window.twemoji) {
+    twemoji.parse(board.querySelectorAll('.card.word'), { folder: 'svg', ext: '.svg' });
+  }
+
+  buildJigsaw(items);
+}
+
+// ---- Hidden-picture reveal ----
+// One empty slot is created per picture in the round, and each correct
+// match fills in the next slot with a picture from the parent's chosen
+// theme — so the reveal grows in step with the round, whatever its size,
+// instead of a fixed pre-drawn scene peeking out from under covering tiles.
+// "Surprise Me" mixes every theme together, same spirit as before.
+const JIGSAW_THEMES = {
+  animals:   ['🦁','🐘','🦒','🐼','🐨','🦘','🦋','🐝','🐞','🦉','🦅','🦜','🐯','🦓','🦌','🐢'],
+  vehicles:  ['🚗','🚕','🚙','🚀','🛸','🚁','🚂','🚃','🚒','🚑','🚓','🚲','🛵','⛵','✈️','🚌'],
+  toys:      ['🧸','🪀','🎲','🪁','🎈','🧩','🎪','🎡','🎢','🪅','🎯','🎨'],
+  ocean:     ['🐬','🐳','🐠','🐢','🦀','🦑','🐡','🦈','🐙','🦞','🐚','🦐'],
+  pets:      ['🐶','🐱','🐹','🐰','🐦','🐟','🐕','🐈','🐇','🐁'],
+  dinosaurs: ['🦕','🦖','🥚','🦴'],
+  space:     ['🚀','🛸','👽','🌙','⭐','🪐','☄️','🌌','🛰️','🌠'],
+  magic:     ['🦄','🧚','🔮','✨','🌈','💫','🧙','⚡','🌟','🪄'],
+  farm:      ['🐄','🐷','🐔','🐑','🐴','🐐','🦆'],
+  sweets:    ['🍭','🍩','🧁','🍦','🍨','🍓','🍪','🎂','🍬','🍫'],
+};
+const SURPRISE_SCENES = [].concat(...Object.values(JIGSAW_THEMES));
+const JIGSAW_THEME_LABELS = {
+  surprise: '🎲 Surprise Me (Mixed)',
+  animals: '🦁 Animals',
+  vehicles: '🚗 Vehicles',
+  toys: '🧸 Toys',
+  ocean: '🐬 Ocean Animals',
+  pets: '🐶 Pets',
+  dinosaurs: '🦕 Dinosaurs',
+  space: '🚀 Space',
+  magic: '🦄 Magic & Unicorns',
+  farm: '🐄 Farm Animals',
+  sweets: '🍭 Sweet Treats',
+};
+let jigsawTheme = 'surprise';
+function loadJigsawTheme() {
+  try { return localStorage.getItem('csa_jigsaw_theme') || 'surprise'; } catch (e) { return 'surprise'; }
+}
+function saveJigsawTheme(theme) {
+  try { localStorage.setItem('csa_jigsaw_theme', theme); } catch (e) {}
+}
+function currentScenePool() {
+  if (jigsawTheme === 'surprise' || !JIGSAW_THEMES[jigsawTheme]) return SURPRISE_SCENES;
+  return JIGSAW_THEMES[jigsawTheme];
+}
+
+let revealSequence = [];
+let revealFilledCount = 0;
+
+function buildJigsaw(items) {
+  const wrap = document.getElementById('jigsawWrap');
+  const slotsEl = document.getElementById('revealSlots');
+  wrap.classList.add('active');
+  slotsEl.classList.remove('celebrate');
+  slotsEl.innerHTML = '';
+
+  const pool = currentScenePool();
+  let picks = shuffle(pool).slice(0, items.length);
+  // Small themes (e.g. Dinosaurs) may have fewer unique pictures than the
+  // round has slots — top up by reshuffling rather than leaving slots blank.
+  while (picks.length < items.length) {
+    picks = picks.concat(shuffle(pool)).slice(0, items.length);
+  }
+  revealSequence = picks;
+  revealFilledCount = 0;
+
+  for (let i = 0; i < items.length; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'reveal-slot';
+    slot.textContent = '❔';
+    slotsEl.appendChild(slot);
+  }
+}
+function revealNextPiece() {
+  const slots = document.querySelectorAll('#revealSlots .reveal-slot:not(.filled)');
+  if (!slots.length) return;
+  const slot = slots[0];
+  slot.textContent = revealSequence[revealFilledCount] || '⭐';
+  slot.classList.add('filled');
+  revealFilledCount++;
+  revealChime(revealFilledCount);
+  const remaining = document.querySelectorAll('#revealSlots .reveal-slot:not(.filled)');
+  if (remaining.length === 0) {
+    document.getElementById('revealSlots').classList.add('celebrate');
+    spawnConfetti();
+  }
+}
+
+function updateComboDisplay() {
+  const pill = document.getElementById('comboPill');
+  document.getElementById('comboCount').textContent = comboCount;
+  pill.classList.toggle('show', comboCount >= 2);
+}
+
+function triggerFrenzy() {
+  document.body.classList.add('frenzy');
+  const banner = document.getElementById('comboBanner');
+  banner.textContent = `🎉 Combo Frenzy! x${comboCount}`;
+  banner.classList.add('show');
+  comboArpeggio();
+  spawnConfetti();
+  clearTimeout(window._frenzyTimer);
+  window._frenzyTimer = setTimeout(() => {
+    document.body.classList.remove('frenzy');
+    banner.classList.remove('show');
+  }, 1400);
+}
+function spawnConfetti() {
+  const emojis = ['⭐', '🎉', '✨', '🌟', '🎈'];
+  for (let i = 0; i < 16; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-bit';
+    c.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.animationDuration = (1.3 + Math.random() * 1.1) + 's';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2800);
+  }
+}
+function showSillyBubble(text, x, y) {
+  const b = document.createElement('div');
+  b.className = 'silly-bubble';
+  b.textContent = text;
+  b.style.left = x + 'px'; b.style.top = y + 'px';
+  document.body.appendChild(b);
+  requestAnimationFrame(() => b.classList.add('show'));
+  setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 300); }, 1700);
+}
+
+// ---- Power-ups ----
+document.getElementById('wandBtn').onclick = () => {
+  if (wandUses <= 0) return;
+  let targetIdx = selectedPic ? selectedPic.idx : null;
+  if (targetIdx === null) {
+    const remaining = [...document.querySelectorAll('.card.pic:not(.correct)')];
+    if (!remaining.length) return;
+    targetIdx = parseInt(remaining[Math.floor(Math.random() * remaining.length)].dataset.idx, 10);
+  }
+  const wordEl = [...document.querySelectorAll('.card.word:not(.correct)')].find(w => parseInt(w.dataset.idx, 10) === targetIdx);
+  if (wordEl) {
+    wordEl.classList.add('glow-target');
+    setTimeout(() => wordEl.classList.remove('glow-target'), 2500);
+  }
+  wandUses--;
+  document.getElementById('wandCount').textContent = wandUses;
+  if (wandUses === 0) document.getElementById('wandBtn').classList.add('disabled');
+};
+document.getElementById('lightBtn').onclick = () => {
+  if (lightUses <= 0) return;
+  const correctIdx = selectedPic ? selectedPic.idx : null;
+  const wrongWords = [...document.querySelectorAll('.card.word:not(.correct)')].filter(w => parseInt(w.dataset.idx, 10) !== correctIdx);
+  const toDim = wrongWords.sort(() => Math.random() - 0.5).slice(0, Math.ceil(wrongWords.length / 2));
+  toDim.forEach(w => {
+    w.classList.add('dimmed-out');
+    setTimeout(() => w.classList.remove('dimmed-out'), 3000);
+  });
+  lightUses--;
+  document.getElementById('lightCount').textContent = lightUses;
+  if (lightUses === 0) document.getElementById('lightBtn').classList.add('disabled');
+};
+
+function onPicClick(el, idx) {
+  if (el.classList.contains('correct')) return;
+  document.querySelectorAll('.card.pic').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPic = { el, idx };
+  beep(440, 0.08);
+  speak(currentItems[idx][1]);
+
+  lastActionAt = Date.now();
+  clearTimeout(window._hesitationTimer);
+  window._hesitationTimer = setTimeout(() => { hesitationFlag = true; }, HESITATION_MS);
+
+  if (!el.classList.contains('revealed')) {
+    el.classList.add('revealed');
+    const veil = el.querySelector('.dust-veil');
+    if (veil) veil.classList.add('swiped');
+    // Cute 3D lively reveal: a livelier pop/tumble-in with a matching glow
+    // flash on the card, plus a sparkle burst and a distinct reveal chime —
+    // this plays for every picture in the round, however many there are.
+    el.classList.add('reveal-3d');
+    revealChime(idx);
+    spawnRevealSparkles(el);
+    setTimeout(() => el.classList.remove('reveal-3d'), 800);
+    el.classList.add('alive');
+    setTimeout(() => el.classList.remove('alive'), 2000);
+  }
+}
+
+const LINE_COLORS = ["#ff8fa3","#7bc9ff","#8fe3a0","#ffcf5c","#c79bff","#ff9f6e"];
+let lineColorIdx = 0;
+
+function drawLine(picEl, wordEl) {
+  const wrap = boardWrap;
+  const svg = document.getElementById('lineLayer');
+  const wrapRect = wrap.getBoundingClientRect();
+  const picRect = picEl.getBoundingClientRect();
+  const wordRect = wordEl.getBoundingClientRect();
+  const x1 = picRect.right - wrapRect.left - 6;
+  const y1 = picRect.top + picRect.height / 2 - wrapRect.top;
+  const x2 = wordRect.left - wrapRect.left + 6;
+  const y2 = wordRect.top + wordRect.height / 2 - wrapRect.top;
+  const color = LINE_COLORS[lineColorIdx % LINE_COLORS.length];
+  lineColorIdx++;
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+  line.setAttribute('x2', x1); line.setAttribute('y2', y1);
+  line.setAttribute('stroke', color); line.setAttribute('stroke-width', '5'); line.setAttribute('stroke-linecap', 'round');
+  line.style.transition = 'x2 0.35s ease, y2 0.35s ease';
+  svg.appendChild(line);
+  requestAnimationFrame(() => { line.setAttribute('x2', x2); line.setAttribute('y2', y2); });
+  [[x1, y1], [x2, y2]].forEach(([cx, cy]) => {
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', 6); dot.setAttribute('fill', color);
+    svg.appendChild(dot);
+  });
+}
+
+function onWordClick(el, idx) {
+  if (el.classList.contains('correct')) return;
+  speak(el.textContent);
+  if (!selectedPic) { return; }
+
+  if (selectedPic.idx === idx) {
+    const picEl = selectedPic.el;
+    picEl.classList.remove('selected'); picEl.classList.add('correct'); el.classList.add('correct');
+    drawLine(picEl, el);
+
+    stars++; starCount.textContent = stars; saveProgress();
+    document.getElementById('starPill').classList.remove('bump'); void document.getElementById('starPill').offsetWidth;
+    document.getElementById('starPill').classList.add('bump');
+    beep(660, 0.15);
+    setTimeout(speakPraise, 500);
+
+    // combo tracking
+    const now = Date.now();
+    if (lastMatchAt && (now - lastMatchAt) < COMBO_WINDOW_MS) comboCount++;
+    else comboCount = 1;
+    lastMatchAt = now;
+    updateComboDisplay();
+    if (comboCount >= 3) {
+      triggerFrenzy();
+      stars++; starCount.textContent = stars; saveProgress(); // bonus star burst
+    }
+    lastActionAt = now;
+    clearTimeout(window._hesitationTimer);
+
+    revealNextPiece();
+
+    matchesLeft--; selectedPic = null;
+    const milestoneHit = (stars % 10 === 0);
+    const roundComplete = (matchesLeft === 0);
+    const levelUpMsg = roundComplete ? checkProgression() : "";
+
+    if (roundComplete) {
+      // Adaptive difficulty for the *next* round, based on how this one went
+      if (hesitationFlag) adaptiveMod = -1;
+      else if (wrongThisRound === 0 && comboCount >= 3) adaptiveMod = 1;
+      else adaptiveMod = 0;
+    } else {
+      window._hesitationTimer = setTimeout(() => { hesitationFlag = true; }, HESITATION_MS);
+    }
+
+    if (milestoneHit) { setTimeout(() => showBigCelebration(roundComplete, levelUpMsg), 900); }
+    else if (roundComplete) { setTimeout(() => showRoundComplete(levelUpMsg), 1400); }
+  } else {
+    wrongThisRound++;
+    comboCount = 0; updateComboDisplay();
+    const picWord = currentItems[selectedPic.idx][1];
+    el.classList.add('silly-away'); selectedPic.el.classList.add('silly-away');
+    sillyHonk();
+    const rect = el.getBoundingClientRect();
+    showSillyBubble(SILLY_LINES[Math.floor(Math.random() * SILLY_LINES.length)](picWord, el.textContent), rect.left + rect.width / 2, rect.top);
+    setTimeout(() => speak("Oopsie! Try again!", { pitch: 1.2 }), 350);
+    setTimeout(() => { el.classList.remove('silly-away'); selectedPic.el.classList.remove('silly-away', 'selected'); selectedPic = null; }, 650);
+  }
+}
+
+function checkProgression() {
+  const age = childAge || 5;
+  let levelUpMsg = "";
+  if (wrongThisRound === 0) {
+    perfectStreak++;
+    if (difficultyTier < 4 && perfectStreak >= ROUNDS_TO_ADVANCE) {
+      difficultyTier++;
+      perfectStreak = 0;
+      saveTierForAge(age, difficultyTier);
+      updateLevelBadge();
+      levelUpMsg = ` You've leveled up to ${LEVEL_NAMES[difficultyTier - 1]}!`;
+    }
+  } else {
+    perfectStreak = 0;
+  }
+  return levelUpMsg;
+}
+
+function showRoundComplete(levelUpMsg) {
+  levelUpMsg = levelUpMsg || "";
+  const line = ROUND_ENCOURAGE[Math.floor(Math.random() * ROUND_ENCOURAGE.length)];
+  overlayHeadline.textContent = "Great job, " + PLAYER_NAME + "!";
+  overlayText.textContent = `You matched every ${currentCat.toLowerCase()} word! ${line} ⭐ Total stars: ${stars}${levelUpMsg}`;
+  overlay.classList.add('show');
+  speak(`${line} You matched every ${currentCat} word!${levelUpMsg}`, livelyOpts());
+}
+
+function nextSticker() {
+  if (ownedStickers.length < STICKERS.length) return STICKERS[ownedStickers.length];
+  return STICKERS[Math.floor(Math.random() * STICKERS.length)];
+}
+
+function showBigCelebration(alsoRoundComplete, levelUpMsg) {
+  levelUpMsg = levelUpMsg || "";
+  const cel = CELEBRATIONS[Math.floor(Math.random() * CELEBRATIONS.length)];
+  const sticker = nextSticker();
+  if (!ownedStickers.includes(sticker.id)) ownedStickers.push(sticker.id);
+  saveProgress();
+
+  const card = document.getElementById('bigCelCard');
+  card.style.background = cel.bg;
+  document.getElementById('bigCelTrophy').textContent = cel.trophy;
+  const headlineEl = document.getElementById('bigCelHeadline');
+  headlineEl.textContent = cel.headline;
+  headlineEl.style.color = cel.color;
+
+  let sub = `${PLAYER_NAME}, you earned ${stars} stars!${levelUpMsg} You're incredible!`;
+  if (alsoRoundComplete) sub = `${PLAYER_NAME}, you finished ${currentCat} AND earned ${stars} stars!${levelUpMsg} Incredible!`;
+  document.getElementById('bigCelSub').textContent = sub;
+  document.getElementById('bigCelStarTotal').textContent = stars;
+  document.getElementById('newStickerEmoji').textContent = sticker.emoji;
+  document.getElementById('newStickerName').textContent = sticker.name;
+
+  bigCel.classList.add('show');
+  speak(`Wow ${PLAYER_NAME}! ${cel.headline}! You earned a new sticker: ${sticker.name}!`, livelyOpts());
+}
+
+function renderAlbum() {
+  const grid = document.getElementById('albumGrid');
+  grid.innerHTML = "";
+  STICKERS.forEach(s => {
+    const owned = ownedStickers.includes(s.id);
+    const slot = document.createElement('div');
+    slot.className = 'sticker-slot ' + (owned ? 'owned' : 'locked');
+    slot.innerHTML = `<div class="emo">${owned ? s.emoji : '❔'}</div><div class="nm">${owned ? s.name : 'Locked'}</div>`;
+    grid.appendChild(slot);
+  });
+  document.getElementById('albumProgress').textContent = `You've collected ${ownedStickers.length} of ${STICKERS.length} stickers! Keep matching to unlock more.`;
+}
+
+function openAlbum(from) {
+  previousView = from;
+  hideAllScreens();
+  renderAlbum();
+  albumWrap.style.display = 'block';
+}
+function closeAlbum() {
+  albumWrap.style.display = 'none';
+  if (previousView === 'picker') { catPicker.style.display = 'grid'; }
+  else { boardWrap.style.display = 'block'; }
+}
+
+document.getElementById('playAgainBtn').onclick = () => { overlay.classList.remove('show'); loadCategory(currentCat); };
+document.getElementById('changeCatBtn').onclick = () => { overlay.classList.remove('show'); showCategoryPicker(); };
+document.getElementById('homeBtn').onclick = () => { showCategoryPicker(); };
+document.getElementById('closeBtn').onclick = () => {
+  window.close();
+  // Most browsers block window.close() on tabs that weren't opened via
+  // script (e.g. a normal link click), so if we're still here after a
+  // moment, fall back to returning to the hub.
+  setTimeout(() => {
+    window.location.href = 'https://sharable.link/mbzcck74';
+  }, 150);
+};
+document.getElementById('soundBtn').onclick = (e) => {
+  soundOn = !soundOn; e.target.textContent = soundOn ? '🔊' : '🔇';
+  if (!soundOn && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+};
+document.getElementById('albumBtn').onclick = () => { openAlbum(catPicker.style.display !== 'none' ? 'picker' : 'game'); };
+document.getElementById('albumBackBtn').onclick = closeAlbum;
+document.getElementById('viewAlbumBtn').onclick = () => { bigCel.classList.remove('show'); openAlbum(catPicker.style.display !== 'none' ? 'picker' : 'game'); };
+document.getElementById('keepPlayingBtn').onclick = () => { bigCel.classList.remove('show'); };
+document.getElementById('settingsBtn').onclick = () => { showSettings(false); };
+
+loadProgress();
+jigsawTheme = loadJigsawTheme();
+starCount.textContent = stars;
+buildCategoryPicker();
+showCategoryPicker();
+</script>
+<script>(function(){
+if(window.top===window.self)return;
+var WRAPPER_ORIGIN="https://sharable.link";
+function retarget(raw,isDownload){
+var here,url;
+try{here=new URL(location.href);url=new URL(raw,location.href)}catch(e){return null}
+if(url.protocol!=="http:"&&url.protocol!=="https:")return null;
+if(url.origin!==here.origin)return url.href;
+if(isDownload||url.pathname===here.pathname)return null;
+return WRAPPER_ORIGIN+url.pathname+url.search+url.hash}
+document.addEventListener("click",function(e){
+if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+if(document.querySelector("base[target]"))return;
+var a=e.target&&e.target.closest?e.target.closest("a[href]"):null;
+if(!a||(a.target&&a.target!=="_self"))return;
+var href=retarget(a.getAttribute("href"),a.hasAttribute("download"));
+if(!href)return;
+a.href=href;a.target="_top"});
+document.addEventListener("submit",function(e){
+var form=e.target;
+if(e.defaultPrevented||!form||form.target)return;
+var href=retarget(form.getAttribute("action"),false);
+if(!href)return;
+form.action=href;form.target="_top"})})();</script></body>
+</html>
